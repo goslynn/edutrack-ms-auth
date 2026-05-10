@@ -1,0 +1,2 @@
+ALTER TABLE auth.users ADD COLUMN display_name VARCHAR(30) NOT NULL DEFAULT '';
+ALTER TABLE auth.users ALTER COLUMN display_name DROP DEFAULT;
