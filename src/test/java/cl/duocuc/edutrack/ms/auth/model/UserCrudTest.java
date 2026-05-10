@@ -1,7 +1,7 @@
 package cl.duocuc.edutrack.ms.auth.model;
 
 import io.quarkus.test.junit.QuarkusTest;
-import io.quarkus.test.junit.TestTransaction;
+import io.quarkus.test.TestTransaction;
 import jakarta.persistence.PersistenceException;
 import org.junit.jupiter.api.Test;
 
@@ -184,7 +184,11 @@ class UserCrudTest {
         token.persist();
         User.getEntityManager().flush();
 
+        User.getEntityManager().refresh(u); // sustituye el ArrayList plain por el proxy Hibernate
+        u.refreshTokens.size();             // inicializa la colección lazy desde DB
         u.delete();
+        User.getEntityManager().flush();
+        User.getEntityManager().clear();
 
         assertEquals(0, RefreshToken.<RefreshToken>find("tokenHash", "hash_unico_cascade_test").count());
     }

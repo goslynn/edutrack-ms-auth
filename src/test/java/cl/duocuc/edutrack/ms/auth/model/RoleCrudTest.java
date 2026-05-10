@@ -1,7 +1,7 @@
 package cl.duocuc.edutrack.ms.auth.model;
 
 import io.quarkus.test.junit.QuarkusTest;
-import io.quarkus.test.junit.TestTransaction;
+import io.quarkus.test.TestTransaction;
 import jakarta.persistence.PersistenceException;
 import org.junit.jupiter.api.Test;
 
@@ -174,7 +174,11 @@ class RoleCrudTest {
         Role.getEntityManager().flush();
         UUID permId = perm.id;
 
+        Role.getEntityManager().refresh(r); // sustituye el ArrayList plain por el proxy Hibernate
+        r.permissions.size();               // inicializa la colección lazy desde DB
         r.delete();
+        Role.getEntityManager().flush();
+        Role.getEntityManager().clear();
 
         assertNull(RolePermission.findById(permId));
     }

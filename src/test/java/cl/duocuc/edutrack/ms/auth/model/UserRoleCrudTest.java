@@ -1,7 +1,7 @@
 package cl.duocuc.edutrack.ms.auth.model;
 
 import io.quarkus.test.junit.QuarkusTest;
-import io.quarkus.test.junit.TestTransaction;
+import io.quarkus.test.TestTransaction;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -131,7 +131,11 @@ class UserRoleCrudTest {
         UserRole.getEntityManager().flush();
 
         UserRoleId pk = new UserRoleId(u.id, r.id);
+        UserRole.getEntityManager().refresh(u); // sustituye el ArrayList plain por el proxy Hibernate
+        u.userRoles.size();                     // inicializa la colección lazy desde DB
         u.delete();
+        UserRole.getEntityManager().flush();
+        UserRole.getEntityManager().clear();
 
         assertNull(UserRole.findById(pk));
     }

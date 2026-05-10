@@ -1,7 +1,7 @@
 package cl.duocuc.edutrack.ms.auth.model;
 
 import io.quarkus.test.junit.QuarkusTest;
-import io.quarkus.test.junit.TestTransaction;
+import io.quarkus.test.TestTransaction;
 import jakarta.persistence.PersistenceException;
 import org.junit.jupiter.api.Test;
 

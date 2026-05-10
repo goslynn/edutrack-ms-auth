@@ -1,12 +1,11 @@
 package cl.duocuc.edutrack.ms.auth.db;
 
 import cl.duocuc.edutrack.ms.auth.model.*;
+import io.quarkus.test.TestTransaction;
 import io.quarkus.test.junit.QuarkusTest;
-import io.quarkus.test.junit.TestTransaction;
 import jakarta.inject.Inject;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.Test;
-
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -26,11 +25,11 @@ class DatabaseConnectivityTest {
     @Test
     @TestTransaction
     void allPanacheEntitiesAreAccessible() {
-        assertDoesNotThrow(User::count);
-        assertDoesNotThrow(Role::count);
-        assertDoesNotThrow(UserRole::count);
-        assertDoesNotThrow(RolePermission::count);
-        assertDoesNotThrow(RefreshToken::count);
+        assertDoesNotThrow(() -> User.count());
+        assertDoesNotThrow(() -> Role.count());
+        assertDoesNotThrow(() -> UserRole.count());
+        assertDoesNotThrow(() -> RolePermission.count());
+        assertDoesNotThrow(() -> RefreshToken.count());
     }
 
     @Test
