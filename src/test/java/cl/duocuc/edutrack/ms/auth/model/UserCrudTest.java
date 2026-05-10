@@ -185,7 +185,8 @@ class UserCrudTest {
         User.getEntityManager().flush();
 
         User.getEntityManager().refresh(u); // sustituye el ArrayList plain por el proxy Hibernate
-        u.refreshTokens.size();             // inicializa la colección lazy desde DB
+        int size = u.refreshTokens.size();             // inicializa la colección lazy desde DB
+        assertEquals(1, size, "debería haber 1 token asociado al usuario");
         u.delete();
         User.getEntityManager().flush();
         User.getEntityManager().clear();

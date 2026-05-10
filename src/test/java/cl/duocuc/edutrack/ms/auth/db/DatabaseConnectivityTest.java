@@ -49,7 +49,7 @@ class DatabaseConnectivityTest {
 
     @Test
     @TestTransaction
-    void flywayV2SeedCargóRoles() {
+    void flywayV2SeedCargaRoles() {
         assertEquals(3, Role.count(), "V2 seed debe tener exactamente SUPERUSER, ADMIN y DOCENTE");
         assertNotNull(Role.find("name", "SUPERUSER").firstResult());
         assertNotNull(Role.find("name", "ADMIN").firstResult());

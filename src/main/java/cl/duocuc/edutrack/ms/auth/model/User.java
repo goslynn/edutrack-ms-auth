@@ -17,10 +17,10 @@ public class User extends PanacheEntityBase {
     @Column(columnDefinition = "uuid", updatable = false, nullable = false)
     public UUID id;
 
-    @Column(nullable = false, unique = true, length = 255)
+    @Column(nullable = false, unique = true)
     public String email;
 
-    @Column(name = "password_hash", nullable = false, length = 255)
+    @Column(name = "password_hash", nullable = false)
     public String passwordHash;
 
     @Column(nullable = false)

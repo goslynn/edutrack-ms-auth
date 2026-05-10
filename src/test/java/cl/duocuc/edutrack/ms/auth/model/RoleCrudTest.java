@@ -175,7 +175,8 @@ class RoleCrudTest {
         UUID permId = perm.id;
 
         Role.getEntityManager().refresh(r); // sustituye el ArrayList plain por el proxy Hibernate
-        r.permissions.size();               // inicializa la colección lazy desde DB
+        int size = r.permissions.size();               // inicializa la colección lazy desde DB
+        assertEquals(1, size, "debería haber 1 permiso asociado al rol");
         r.delete();
         Role.getEntityManager().flush();
         Role.getEntityManager().clear();
