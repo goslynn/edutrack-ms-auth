@@ -17,6 +17,9 @@ public class User extends PanacheEntityBase {
     @Column(columnDefinition = "uuid", updatable = false, nullable = false)
     public UUID id;
 
+    @Column(name = "display_name", nullable = false, length = 30)
+    public String displayName;
+
     @Column(nullable = false, unique = true)
     public String email;
 

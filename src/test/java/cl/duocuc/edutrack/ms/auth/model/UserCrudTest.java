@@ -15,6 +15,7 @@ class UserCrudTest {
 
     private User buildUser(String email) {
         User u = new User();
+        u.displayName = "Test User";
         u.email = email;
         u.passwordHash = "$2a$10$placeholder_hash";
         return u;
@@ -156,6 +157,26 @@ class UserCrudTest {
     }
 
     // ── CONSTRAINTS ───────────────────────────────────────────────────────────
+
+    @Test
+    void displayName_sePersiste() {
+        User u = buildUser("displayname@test.com");
+        u.displayName = "Nombre Visible";
+        u.persist();
+        User.getEntityManager().flush();
+
+        User found = User.findById(u.id);
+        assertEquals("Nombre Visible", found.displayName);
+    }
+
+    @Test
+    void displayName_superaLargoMaximo_lanzaExcepcion() {
+        User u = buildUser("longname@test.com");
+        u.displayName = "A".repeat(31);
+        u.persist();
+
+        assertThrows(PersistenceException.class, () -> User.getEntityManager().flush());
+    }
 
     @Test
     void emailDuplicado_lanzaExcepcion() {
