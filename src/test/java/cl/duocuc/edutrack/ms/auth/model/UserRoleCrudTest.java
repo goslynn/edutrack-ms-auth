@@ -12,6 +12,7 @@ class UserRoleCrudTest {
 
     private User buildUser(String email) {
         User u = new User();
+        u.displayName = "Test User";
         u.email = email;
         u.passwordHash = "$2a$10$placeholder";
         return u;
