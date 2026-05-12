@@ -1,5 +1,7 @@
 package cl.duocuc.edutrack.ms.auth.model;
 
+import cl.duocuc.edutrack.ms.auth.model.entity.RefreshToken;
+import cl.duocuc.edutrack.ms.auth.model.entity.User;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.TestTransaction;
 import jakarta.persistence.PersistenceException;
