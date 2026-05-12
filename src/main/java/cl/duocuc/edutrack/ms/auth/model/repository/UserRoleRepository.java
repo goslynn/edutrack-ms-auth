@@ -32,4 +32,15 @@ public class UserRoleRepository implements PanacheRepositoryBase<UserRole, UserR
     public long deleteByUserId(UUID userId) {
         return delete("id.userId", userId);
     }
+
+    public long countActiveByRoleIdExcluding(UUID roleId, UUID excludeUserId) {
+        return getEntityManager()
+            .createQuery(
+                "select count(ur) from UserRole ur join User u on u.id = ur.id.userId " +
+                "where ur.id.roleId = :roleId and u.enabled = true and u.id <> :excludeUserId",
+                Long.class)
+            .setParameter("roleId", roleId)
+            .setParameter("excludeUserId", excludeUserId)
+            .getSingleResult();
+    }
 }
