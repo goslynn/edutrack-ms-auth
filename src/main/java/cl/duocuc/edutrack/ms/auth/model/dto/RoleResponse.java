@@ -1,4 +1,4 @@
-package cl.duocuc.edutrack.ms.auth.dto;
+package cl.duocuc.edutrack.ms.auth.model.dto;
 
 import java.time.Instant;
 import java.util.UUID;

@@ -1,8 +1,8 @@
-package cl.duocuc.edutrack.ms.auth;
+package cl.duocuc.edutrack.ms.auth.resource;
 
-import cl.duocuc.edutrack.ms.auth.dto.LoginRequest;
-import cl.duocuc.edutrack.ms.auth.dto.LoginResponse;
-import cl.duocuc.edutrack.ms.auth.dto.RefreshRequest;
+import cl.duocuc.edutrack.ms.auth.model.dto.LoginRequest;
+import cl.duocuc.edutrack.ms.auth.model.dto.LoginResponse;
+import cl.duocuc.edutrack.ms.auth.model.dto.RefreshRequest;
 import cl.duocuc.edutrack.ms.auth.service.AuthService;
 import jakarta.inject.Inject;
 import jakarta.validation.Valid;

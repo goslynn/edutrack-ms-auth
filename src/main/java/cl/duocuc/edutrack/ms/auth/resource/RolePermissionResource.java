@@ -1,7 +1,7 @@
-package cl.duocuc.edutrack.ms.auth;
+package cl.duocuc.edutrack.ms.auth.resource;
 
-import cl.duocuc.edutrack.ms.auth.dto.PermissionResponse;
-import cl.duocuc.edutrack.ms.auth.dto.SetPermissionRequest;
+import cl.duocuc.edutrack.ms.auth.model.dto.PermissionResponse;
+import cl.duocuc.edutrack.ms.auth.model.dto.SetPermissionRequest;
 import cl.duocuc.edutrack.ms.auth.service.PermissionService;
 import cl.duocuc.edutrack.ms.auth.service.RoleGuard;
 import jakarta.inject.Inject;

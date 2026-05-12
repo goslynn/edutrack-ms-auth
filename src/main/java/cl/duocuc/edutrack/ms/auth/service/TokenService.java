@@ -1,6 +1,6 @@
 package cl.duocuc.edutrack.ms.auth.service;
 
-import cl.duocuc.edutrack.ms.auth.dto.LoginResponse;
+import cl.duocuc.edutrack.ms.auth.model.dto.LoginResponse;
 import cl.duocuc.edutrack.ms.auth.model.entity.RefreshToken;
 import cl.duocuc.edutrack.ms.auth.model.entity.User;
 import cl.duocuc.edutrack.ms.auth.model.repository.RefreshTokenRepository;

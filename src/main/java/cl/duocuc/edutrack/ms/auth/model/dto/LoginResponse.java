@@ -1,4 +1,4 @@
-package cl.duocuc.edutrack.ms.auth.dto;
+package cl.duocuc.edutrack.ms.auth.model.dto;
 
 public record LoginResponse(
     String accessToken,

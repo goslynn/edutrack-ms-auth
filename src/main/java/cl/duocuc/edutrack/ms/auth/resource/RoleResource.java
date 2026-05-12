@@ -1,8 +1,8 @@
-package cl.duocuc.edutrack.ms.auth;
+package cl.duocuc.edutrack.ms.auth.resource;
 
-import cl.duocuc.edutrack.ms.auth.dto.CreateRoleRequest;
-import cl.duocuc.edutrack.ms.auth.dto.RoleResponse;
-import cl.duocuc.edutrack.ms.auth.dto.UpdateRoleRequest;
+import cl.duocuc.edutrack.ms.auth.model.dto.CreateRoleRequest;
+import cl.duocuc.edutrack.ms.auth.model.dto.RoleResponse;
+import cl.duocuc.edutrack.ms.auth.model.dto.UpdateRoleRequest;
 import cl.duocuc.edutrack.ms.auth.service.RoleGuard;
 import cl.duocuc.edutrack.ms.auth.service.RoleService;
 import jakarta.inject.Inject;

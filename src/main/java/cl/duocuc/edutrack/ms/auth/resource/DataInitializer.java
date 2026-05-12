@@ -1,4 +1,4 @@
-package cl.duocuc.edutrack.ms.auth;
+package cl.duocuc.edutrack.ms.auth.resource;
 
 import cl.duocuc.edutrack.ms.auth.service.AdminSeeder;
 import io.quarkus.runtime.StartupEvent;

@@ -1,8 +1,8 @@
-package cl.duocuc.edutrack.ms.auth;
+package cl.duocuc.edutrack.ms.auth.resource;
 
-import cl.duocuc.edutrack.ms.auth.dto.CreateUserRequest;
-import cl.duocuc.edutrack.ms.auth.dto.UpdateUserRequest;
-import cl.duocuc.edutrack.ms.auth.dto.UserResponse;
+import cl.duocuc.edutrack.ms.auth.model.dto.CreateUserRequest;
+import cl.duocuc.edutrack.ms.auth.model.dto.UpdateUserRequest;
+import cl.duocuc.edutrack.ms.auth.model.dto.UserResponse;
 import cl.duocuc.edutrack.ms.auth.model.entity.User;
 import cl.duocuc.edutrack.ms.auth.service.AuthService;
 import cl.duocuc.edutrack.ms.auth.service.RoleGuard;
