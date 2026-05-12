@@ -1,9 +1,11 @@
 package cl.duocuc.edutrack.ms.auth.resource;
 
+import cl.duocuc.edutrack.ms.auth.model.dto.PermissionRequest;
 import cl.duocuc.edutrack.ms.auth.model.dto.PermissionResponse;
-import cl.duocuc.edutrack.ms.auth.model.dto.SetPermissionRequest;
+import cl.duocuc.edutrack.ms.auth.model.dto.Views;
 import cl.duocuc.edutrack.ms.auth.service.PermissionService;
 import cl.duocuc.edutrack.ms.auth.service.RoleGuard;
+import com.fasterxml.jackson.annotation.JsonView;
 import jakarta.inject.Inject;
 import jakarta.validation.Valid;
 import jakarta.ws.rs.*;
@@ -25,6 +27,7 @@ public class RolePermissionResource {
     RoleGuard roleGuard;
 
     @GET
+    @JsonView(Views.List.class)
     public List<PermissionResponse> list(
         @HeaderParam("X-User-Roles") String rolesHeader,
         @PathParam("roleId") UUID roleId
@@ -37,11 +40,12 @@ public class RolePermissionResource {
 
     @PUT
     @Path("/{resourceUuid}")
+    @JsonView(Views.Detailed.class)
     public PermissionResponse upsert(
         @HeaderParam("X-User-Roles") String rolesHeader,
         @PathParam("roleId") UUID roleId,
         @PathParam("resourceUuid") UUID resourceUuid,
-        @Valid SetPermissionRequest req
+        @Valid @JsonView(Views.Update.class) PermissionRequest req
     ) {
         roleGuard.requireAnyRole(rolesHeader, "SUPERUSER", "ADMIN");
         return permissionService.toResponse(permissionService.upsert(roleId, resourceUuid, req.flags()));
@@ -65,6 +69,7 @@ public class RolePermissionResource {
      */
     @GET
     @Path("/effective")
+    @JsonView(Views.Detailed.class)
     public PermissionResponse effectiveFlags(
         @HeaderParam("X-User-Roles") String rolesHeader,
         @PathParam("roleId") UUID roleId,

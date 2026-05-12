@@ -1,9 +1,11 @@
 package cl.duocuc.edutrack.ms.auth.resource;
 
 import cl.duocuc.edutrack.ms.auth.model.dto.RoleResponse;
+import cl.duocuc.edutrack.ms.auth.model.dto.Views;
 import cl.duocuc.edutrack.ms.auth.service.RoleGuard;
 import cl.duocuc.edutrack.ms.auth.service.RoleService;
 import cl.duocuc.edutrack.ms.auth.service.UserRoleService;
+import com.fasterxml.jackson.annotation.JsonView;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
@@ -27,6 +29,7 @@ public class UserRoleResource {
     RoleGuard roleGuard;
 
     @GET
+    @JsonView(Views.List.class)
     public List<RoleResponse> list(
         @HeaderParam("X-User-Roles") String rolesHeader,
         @HeaderParam("X-User-Id") String userIdHeader,

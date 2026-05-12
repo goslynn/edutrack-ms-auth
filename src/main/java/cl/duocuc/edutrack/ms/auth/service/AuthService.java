@@ -1,6 +1,6 @@
 package cl.duocuc.edutrack.ms.auth.service;
 
-import cl.duocuc.edutrack.ms.auth.model.dto.LoginResponse;
+import cl.duocuc.edutrack.ms.auth.model.dto.AuthResponse;
 import cl.duocuc.edutrack.ms.auth.model.entity.User;
 import cl.duocuc.edutrack.ms.auth.model.repository.RefreshTokenRepository;
 import cl.duocuc.edutrack.ms.auth.model.repository.UserRepository;
@@ -28,7 +28,7 @@ public class AuthService {
     RefreshTokenRepository refreshTokenRepository;
 
     @Transactional
-    public LoginResponse login(String email, String password) {
+    public AuthResponse login(String email, String password) {
         User user = userRepository.findByEmail(email)
             .filter(u -> u.enabled)
             .orElseThrow(() -> new WebApplicationException(Response.Status.UNAUTHORIZED));
@@ -41,7 +41,7 @@ public class AuthService {
     }
 
     @Transactional
-    public LoginResponse refresh(String rawRefreshToken) {
+    public AuthResponse refresh(String rawRefreshToken) {
         return tokenService.rotateRefreshToken(rawRefreshToken);
     }
 

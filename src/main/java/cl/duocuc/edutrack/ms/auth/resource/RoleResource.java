@@ -1,10 +1,11 @@
 package cl.duocuc.edutrack.ms.auth.resource;
 
-import cl.duocuc.edutrack.ms.auth.model.dto.CreateRoleRequest;
+import cl.duocuc.edutrack.ms.auth.model.dto.RoleRequest;
 import cl.duocuc.edutrack.ms.auth.model.dto.RoleResponse;
-import cl.duocuc.edutrack.ms.auth.model.dto.UpdateRoleRequest;
+import cl.duocuc.edutrack.ms.auth.model.dto.Views;
 import cl.duocuc.edutrack.ms.auth.service.RoleGuard;
 import cl.duocuc.edutrack.ms.auth.service.RoleService;
+import com.fasterxml.jackson.annotation.JsonView;
 import jakarta.inject.Inject;
 import jakarta.validation.Valid;
 import jakarta.ws.rs.*;
@@ -26,17 +27,22 @@ public class RoleResource {
     RoleGuard roleGuard;
 
     @GET
+    @JsonView(Views.List.class)
     public List<RoleResponse> list(@HeaderParam("X-User-Roles") String rolesHeader) {
         roleGuard.requireAnyRole(rolesHeader, "SUPERUSER", "ADMIN", "DOCENTE");
         return roleService.listAll().stream().map(roleService::toResponse).toList();
     }
 
     @POST
+    @JsonView(Views.Detailed.class)
     public Response create(
         @HeaderParam("X-User-Roles") String rolesHeader,
-        @Valid CreateRoleRequest req
+        @Valid @JsonView(Views.Create.class) RoleRequest req
     ) {
         roleGuard.requireAnyRole(rolesHeader, "SUPERUSER", "ADMIN");
+        if (req.name() == null || req.name().isBlank()) {
+            throw new WebApplicationException(Response.Status.BAD_REQUEST);
+        }
         return Response.status(Response.Status.CREATED)
             .entity(roleService.toResponse(roleService.create(req.name(), req.description())))
             .build();
@@ -44,6 +50,7 @@ public class RoleResource {
 
     @GET
     @Path("/{id}")
+    @JsonView(Views.Detailed.class)
     public RoleResponse get(
         @HeaderParam("X-User-Roles") String rolesHeader,
         @PathParam("id") UUID id
@@ -54,10 +61,11 @@ public class RoleResource {
 
     @PUT
     @Path("/{id}")
+    @JsonView(Views.Detailed.class)
     public RoleResponse update(
         @HeaderParam("X-User-Roles") String rolesHeader,
         @PathParam("id") UUID id,
-        @Valid UpdateRoleRequest req
+        @Valid @JsonView(Views.Update.class) RoleRequest req
     ) {
         roleGuard.requireAnyRole(rolesHeader, "SUPERUSER", "ADMIN");
         return roleService.toResponse(roleService.update(id, req.name(), req.description()));

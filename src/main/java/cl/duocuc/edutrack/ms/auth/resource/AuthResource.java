@@ -1,9 +1,10 @@
 package cl.duocuc.edutrack.ms.auth.resource;
 
-import cl.duocuc.edutrack.ms.auth.model.dto.LoginRequest;
-import cl.duocuc.edutrack.ms.auth.model.dto.LoginResponse;
-import cl.duocuc.edutrack.ms.auth.model.dto.RefreshRequest;
+import cl.duocuc.edutrack.ms.auth.model.dto.AuthRequest;
+import cl.duocuc.edutrack.ms.auth.model.dto.AuthResponse;
+import cl.duocuc.edutrack.ms.auth.model.dto.Views;
 import cl.duocuc.edutrack.ms.auth.service.AuthService;
+import com.fasterxml.jackson.annotation.JsonView;
 import jakarta.inject.Inject;
 import jakarta.validation.Valid;
 import jakarta.ws.rs.*;
@@ -22,13 +23,22 @@ public class AuthResource {
 
     @POST
     @Path("/login")
-    public LoginResponse login(@Valid LoginRequest req) {
+    @JsonView(Views.Base.class)
+    public AuthResponse login(@Valid @JsonView(Views.Login.class) AuthRequest req) {
+        if (req.email() == null || req.email().isBlank()
+            || req.password() == null || req.password().isBlank()) {
+            throw new WebApplicationException(Response.Status.BAD_REQUEST);
+        }
         return authService.login(req.email(), req.password());
     }
 
     @POST
     @Path("/refresh")
-    public LoginResponse refresh(@Valid RefreshRequest req) {
+    @JsonView(Views.Base.class)
+    public AuthResponse refresh(@Valid @JsonView(Views.Refresh.class) AuthRequest req) {
+        if (req.refreshToken() == null || req.refreshToken().isBlank()) {
+            throw new WebApplicationException(Response.Status.BAD_REQUEST);
+        }
         return authService.refresh(req.refreshToken());
     }
 

@@ -1,6 +1,6 @@
 package cl.duocuc.edutrack.ms.auth.service;
 
-import cl.duocuc.edutrack.ms.auth.model.dto.LoginResponse;
+import cl.duocuc.edutrack.ms.auth.model.dto.AuthResponse;
 import cl.duocuc.edutrack.ms.auth.model.entity.RefreshToken;
 import cl.duocuc.edutrack.ms.auth.model.entity.User;
 import cl.duocuc.edutrack.ms.auth.model.repository.RefreshTokenRepository;
@@ -38,7 +38,7 @@ public class TokenService {
     RefreshTokenRepository refreshTokenRepository;
 
     @Transactional
-    public LoginResponse issueTokenPair(User user) {
+    public AuthResponse issueTokenPair(User user) {
         List<UUID> roleIds = userRoleRepository.findRoleIdsByUserId(user.id);
         String accessToken = buildAccessToken(user.id, roleIds);
         String rawRefreshToken = UUID.randomUUID().toString();
@@ -49,11 +49,11 @@ public class TokenService {
         rt.expiresAt = Instant.now().plus(refreshExpiryDays, ChronoUnit.DAYS);
         rt.persist();
 
-        return new LoginResponse(accessToken, rawRefreshToken, "Bearer", accessExpirySeconds);
+        return new AuthResponse(accessToken, rawRefreshToken, "Bearer", accessExpirySeconds);
     }
 
     @Transactional
-    public LoginResponse rotateRefreshToken(String rawRefreshToken) {
+    public AuthResponse rotateRefreshToken(String rawRefreshToken) {
         String hash = hashToken(rawRefreshToken);
         RefreshToken rt = refreshTokenRepository.findByTokenHash(hash)
             .orElseThrow(() -> new WebApplicationException(Response.Status.FORBIDDEN));
