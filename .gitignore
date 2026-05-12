@@ -44,8 +44,5 @@ nb-configuration.xml
 # TLS Certificates
 .certs/
 
-#env
-.env
-
 # Llaves privadas RS256 — NUNCA versionar en producción
 src/main/resources/privateKey.pem
