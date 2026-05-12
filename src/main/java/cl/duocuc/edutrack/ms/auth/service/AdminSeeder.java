@@ -28,16 +28,21 @@ public class AdminSeeder {
     @ConfigProperty(name = "auth.seed.admin.password", defaultValue = "changeme123!")
     String adminPassword;
 
-    @ConfigProperty(name = "auth.seed.admin.display-name", defaultValue = "Administrador")
+    @ConfigProperty(name = "auth.seed.admin.display-name", defaultValue = "admin")
     String adminDisplayName;
 
     @Transactional
     public void seedIfNeeded() {
-        if (userRepository.count() > 0) return;
-
         Role superuserRole = roleRepository.findByName("SUPERUSER")
             .orElseThrow(() -> new IllegalStateException(
                 "SUPERUSER role not found — verify Flyway V2 migration ran correctly"));
+
+        boolean hayAdmin = userRepository.findByEmail(adminEmail)
+                .filter(u -> u.userRoles.stream().anyMatch(ur -> superuserRole.equals(ur.role)))
+                .isPresent();
+
+        if (hayAdmin)
+            return;
 
         User admin = new User();
         admin.email = adminEmail;

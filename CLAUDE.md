@@ -62,8 +62,51 @@ No usar `.env` ni archivos de secrets versionados. Los defaults en `application.
 - Paquete base: `cl.duocuc.edutrack.ms.auth`
 - Los recursos JAX-RS van en `cl.duocuc.edutrack.ms.auth` (mismo nivel que `AuthResource`)
 - Los servicios/lógica de negocio van en `cl.duocuc.edutrack.ms.auth.service`
-- Los DTOs van en `cl.duocuc.edutrack.ms.auth.dto`
+- Los DTOs van en `cl.duocuc.edutrack.ms.auth.model.dto` — **máximo 2 por entidad/recurso** (un `XxxRequest`, un `XxxResponse`); la granularidad por endpoint se controla con `@JsonView` (ver sección "DTOs y `@JsonView`")
 - Los repositorios Panache (`PanacheRepositoryBase`) van en `cl.duocuc.edutrack.ms.auth.model.repository`; las entidades mantienen Active Record para CRUD básico y los repositorios exponen queries de dominio
 - Campos de entidad `public` (convención Panache Active Record) — no generar getters/setters
 - El hash de contraseñas debe hacerse con Argon2 o bcrypt; **nunca** almacenar ni loguear contraseñas en claro
 - Los refresh tokens se almacenan hasheados (`tokenHash`); el token raw solo se entrega al cliente en el momento de emisión
+
+## DTOs y `@JsonView`
+
+Los DTOs están en `cl.duocuc.edutrack.ms.auth.model.dto`. Hay exactamente **un Request y un Response por entidad/recurso**; la diferencia entre los campos que viajan en cada endpoint se modela con `@JsonView` sobre los componentes del record.
+
+**Jerarquía de vistas** (`Views.java`):
+
+```
+Base                    // campos siempre visibles
+Extra                   // campos opt-in para listados/admin
+Detailed extends Base   // GET /{id}, respuestas tras POST/PUT
+Create   extends Base   // body de POST
+Update   extends Base   // body de PUT
+Patch    extends Base, Extra   // body de PATCH
+List     extends Base, Extra   // GET colecciones
+Admin    extends Base, Extra   // vistas con campos sensibles/auditoría
+Internal                // serialización service-to-service
+Login    extends Base   // body de POST /auth/login
+Refresh  extends Base   // body de POST /auth/refresh
+```
+
+**DTOs actuales** (8 archivos):
+
+| DTO | Componentes y vistas |
+|---|---|
+| `UserRequest` | `email,password` → `Create`; `displayName` → `Create/Update/Patch`; `enabled` → `Update/Patch/Admin` |
+| `UserResponse` | `id,email,displayName` → `Base`; `enabled` → `Base/Admin`; `createdAt,updatedAt,roleIds` → `Detailed/Admin` |
+| `RoleRequest` | `name,description` → `Create/Update/Patch` |
+| `RoleResponse` | `id,name` → `Base`; `description` → `Base/Extra`; timestamps → `Detailed/Admin` |
+| `PermissionRequest` | `flags` → `Create/Update/Patch` |
+| `PermissionResponse` | base + `flagsLabel` (`Base/Extra`); helper estático `toLabel(short)` |
+| `AuthRequest` | `email,password` → `Login`; `refreshToken` → `Refresh` |
+| `AuthResponse` | `accessToken,refreshToken,tokenType,expiresIn` → `Base` |
+
+**Convención de anotación de endpoints:**
+
+- `GET` de colección → `@JsonView(Views.List.class)` sobre el método
+- `GET /{id}` y respuestas tras `POST`/`PUT` → `@JsonView(Views.Detailed.class)`
+- Body de `POST` → parámetro anotado con `@JsonView(Views.Create.class)`
+- Body de `PUT` → parámetro anotado con `@JsonView(Views.Update.class)`
+- `AuthResource.login` usa `Views.Login` (req) / `Views.Base` (resp); `refresh` usa `Views.Refresh` (req) / `Views.Base` (resp)
+
+**Validaciones**: al unificar `Create`+`Update` en un único record no se puede usar `@NotBlank` condicionalmente entre vistas sin validation groups. Los checks críticos (campos requeridos en `Create`) se hacen defensivamente en el resource devolviendo `400`.
