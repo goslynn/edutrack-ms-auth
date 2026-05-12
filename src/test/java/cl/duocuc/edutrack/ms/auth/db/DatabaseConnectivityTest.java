@@ -1,6 +1,6 @@
 package cl.duocuc.edutrack.ms.auth.db;
 
-import cl.duocuc.edutrack.ms.auth.model.*;
+import cl.duocuc.edutrack.ms.auth.model.entity.*;
 import io.quarkus.test.TestTransaction;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;

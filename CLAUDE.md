@@ -63,6 +63,7 @@ No usar `.env` ni archivos de secrets versionados. Los defaults en `application.
 - Los recursos JAX-RS van en `cl.duocuc.edutrack.ms.auth` (mismo nivel que `AuthResource`)
 - Los servicios/lógica de negocio van en `cl.duocuc.edutrack.ms.auth.service`
 - Los DTOs van en `cl.duocuc.edutrack.ms.auth.dto`
+- Los repositorios Panache (`PanacheRepositoryBase`) van en `cl.duocuc.edutrack.ms.auth.model.repository`; las entidades mantienen Active Record para CRUD básico y los repositorios exponen queries de dominio
 - Campos de entidad `public` (convención Panache Active Record) — no generar getters/setters
 - El hash de contraseñas debe hacerse con Argon2 o bcrypt; **nunca** almacenar ni loguear contraseñas en claro
 - Los refresh tokens se almacenan hasheados (`tokenHash`); el token raw solo se entrega al cliente en el momento de emisión

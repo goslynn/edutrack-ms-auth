@@ -1,4 +1,4 @@
-package cl.duocuc.edutrack.ms.auth.model;
+package cl.duocuc.edutrack.ms.auth.model.entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Embeddable;

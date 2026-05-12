@@ -1,4 +1,4 @@
-package cl.duocuc.edutrack.ms.auth.model;
+package cl.duocuc.edutrack.ms.auth.model.entity;
 
 import io.quarkus.hibernate.orm.panache.PanacheEntityBase;
 import jakarta.persistence.*;
