@@ -1,19 +1,12 @@
 package cl.duocuc.edutrack.ms.auth.model.entity;
 
-import io.quarkus.hibernate.orm.panache.PanacheEntityBase;
 import jakarta.persistence.*;
 
 import java.time.Instant;
-import java.util.UUID;
 
 @Entity
 @Table(name = "refresh_tokens", schema = "auth")
-public class RefreshToken extends PanacheEntityBase {
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    @Column(columnDefinition = "uuid", updatable = false, nullable = false)
-    public UUID id;
+public class RefreshToken extends CreatableEntity {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
@@ -30,12 +23,4 @@ public class RefreshToken extends PanacheEntityBase {
 
     @Column(name = "revoked_at")
     public Instant revokedAt;
-
-    @Column(name = "created_at", nullable = false, updatable = false)
-    public Instant createdAt;
-
-    @PrePersist
-    void prePersist() {
-        createdAt = Instant.now();
-    }
 }

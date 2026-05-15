@@ -27,16 +27,80 @@ El API Gateway valida el JWT y propaga `sub` (UUID del usuario) y `roles[]` como
 
 ## Modelo de datos (`cl.duocuc.edutrack.ms.auth.model`)
 
-Todas las entidades extienden `PanacheEntityBase` (Active Record), PKs son `UUID` con `@GeneratedValue(strategy = GenerationType.UUID)`, y todas las asociaciones usan `FetchType.LAZY`. Los timestamps (`createdAt`, `updatedAt`) se gestionan via `@PrePersist` / `@PreUpdate` con `Instant`.
+Las PKs son `UUID` con `@GeneratedValue(strategy = GenerationType.UUID)` y todas las asociaciones usan `FetchType.LAZY`. Los timestamps (`createdAt`, `updatedAt`) se gestionan via `@PrePersist` / `@PreUpdate` con `Instant`, pero **no se duplican en cada entidad**: se heredan de superclases `@MappedSuperclass` (ver "Herencia de entidades" más abajo).
 
-| Entidad | Tabla | Notas clave |
-|---|---|---|
-| `User` | `auth.users` | `passwordHash` (nunca plaintext); `enabled` flag; relaciones `userRoles` y `refreshTokens` con `cascade=ALL, orphanRemoval=true` |
-| `Role` | `auth.roles` | `name` único; roles precargados: `SUPERUSER`, `ADMIN`, `DOCENTE` (V2 seed) |
-| `UserRole` | `auth.user_roles` | PK compuesta `@EmbeddedId UserRoleId(userId, roleId)`; constructor conveniente `UserRole(User, Role)` |
-| `UserRoleId` | — | `@Embeddable Serializable`; implementa `equals`/`hashCode` sobre los dos UUIDs |
-| `RolePermission` | `auth.role_permissions` | `resourceUuid` sin FK (opaco); `flags short` 0–7; constraint única `(role_id, resource_uuid)` |
-| `RefreshToken` | `auth.refresh_tokens` | Solo `tokenHash` almacenado (nunca el token raw); `revoked` + `revokedAt` para revocación explícita |
+| Entidad | Tabla | Superclase | Notas clave |
+|---|---|---|---|
+| `User` | `auth.users` | `AuditableEntity` | `passwordHash` (nunca plaintext); `enabled` flag; relaciones `userRoles` y `refreshTokens` con `cascade=ALL, orphanRemoval=true` |
+| `Role` | `auth.roles` | `AuditableEntity` | `name` único; roles precargados: `SUPERUSER`, `ADMIN`, `DOCENTE` (V2 seed) |
+| `UserRole` | `auth.user_roles` | `PanacheEntityBase` | PK compuesta `@EmbeddedId UserRoleId(userId, roleId)`; usa `assigned_at` (semántica distinta a `createdAt`), por eso no hereda de Auditable |
+| `UserRoleId` | — | — | `@Embeddable Serializable`; implementa `equals`/`hashCode` sobre los dos UUIDs |
+| `RolePermission` | `auth.role_permissions` | `AuditableEntity` | `resourceUuid` sin FK (opaco); `flags short` 0–7; constraint única `(role_id, resource_uuid)` |
+| `RefreshToken` | `auth.refresh_tokens` | `CreatableEntity` | Inmutable salvo revocación: solo `createdAt`, sin `updatedAt`; `revoked` + `revokedAt` para revocación explícita |
+
+### Herencia de entidades (DRY)
+
+Para evitar repetir `id`, `createdAt`, `updatedAt` y sus callbacks en cada entidad, el paquete `entity` define dos `@MappedSuperclass` apilados:
+
+```
+PanacheEntityBase
+   └── CreatableEntity        // id UUID + createdAt + @PrePersist
+          └── AuditableEntity // agrega updatedAt + @PreUpdate
+```
+
+- `CreatableEntity` se usa en entidades **inmutables tras su creación** (p. ej. `RefreshToken` — solo se marca `revoked`/`revokedAt`, no se "actualiza" en sentido auditable).
+- `AuditableEntity` se usa en entidades **mutables** que requieren registrar la última modificación (`User`, `Role`, `RolePermission`).
+- Una entidad con semántica de auditoría propia (como `UserRole`, que usa `assigned_at`) **no** debe heredar de estas superclases — extiende `PanacheEntityBase` directamente.
+
+Ejemplo de definición y uso:
+
+```java
+@MappedSuperclass
+public abstract class CreatableEntity extends PanacheEntityBase {
+    @Id
+    @GeneratedValue(strategy = GenerationType.UUID)
+    @Column(columnDefinition = "uuid", updatable = false, nullable = false)
+    public UUID id;
+
+    @Column(name = "created_at", nullable = false, updatable = false)
+    public Instant createdAt;
+
+    @PrePersist
+    void onCreate() { createdAt = Instant.now(); }
+}
+
+@MappedSuperclass
+public abstract class AuditableEntity extends CreatableEntity {
+    @Column(name = "updated_at", nullable = false)
+    public Instant updatedAt;
+
+    @PrePersist
+    void onCreateAuditable() { updatedAt = Instant.now(); }
+
+    @PreUpdate
+    void onUpdate() { updatedAt = Instant.now(); }
+}
+
+@Entity
+@Table(name = "users", schema = "auth")
+public class User extends AuditableEntity {
+    // sin id, createdAt, updatedAt, ni callbacks duplicados
+    @Column(nullable = false, unique = true)
+    public String email;
+    // ...
+}
+
+@Entity
+@Table(name = "refresh_tokens", schema = "auth")
+public class RefreshToken extends CreatableEntity {
+    // sin updatedAt: el token es inmutable salvo revocación
+    @Column(name = "token_hash", nullable = false, unique = true)
+    public String tokenHash;
+    // ...
+}
+```
+
+**Regla general:** si una columna aparece en *todas* o la *gran mayoría* de las tablas, súbela a una `@MappedSuperclass`. Nunca dupliques `@PrePersist`/`@PreUpdate` en una entidad si el padre ya los define — las callbacks se heredan y Hibernate ejecuta primero las del padre y luego las del hijo.
 
 ## Migraciones Flyway
 
