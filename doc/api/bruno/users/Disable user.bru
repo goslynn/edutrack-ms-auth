@@ -1,0 +1,23 @@
+meta {
+  name: Disable user
+  type: http
+  seq: 5
+}
+
+delete {
+  url: {{baseUrl}}/auth/users/:userId
+  body: none
+  auth: none
+}
+
+params:path {
+  userId: {{userId}}
+}
+
+headers {
+  X-User-Roles: {{userRoles}}
+}
+
+docs {
+  Deshabilita el usuario (soft delete: marca enabled=false). No elimina datos.
+}

@@ -1,0 +1,19 @@
+meta {
+  name: Get role
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{baseUrl}}/auth/roles/:roleId
+  body: none
+  auth: none
+}
+
+params:path {
+  roleId: {{roleId}}
+}
+
+headers {
+  X-User-Roles: {{userRoles}}
+}

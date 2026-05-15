@@ -1,0 +1,25 @@
+meta {
+  name: Get user
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{baseUrl}}/auth/users/:userId
+  body: none
+  auth: none
+}
+
+params:path {
+  userId: {{userId}}
+}
+
+headers {
+  X-User-Roles: {{userRoles}}
+  X-User-Id: {{userId}}
+}
+
+docs {
+  Obtiene el detalle de un usuario. Permite self-read: si `X-User-Id` coincide
+  con `{id}`, no se requiere rol admin.
+}

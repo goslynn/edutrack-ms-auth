@@ -1,0 +1,29 @@
+meta {
+  name: Create user
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/auth/users
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+  X-User-Roles: {{userRoles}}
+}
+
+body:json {
+  {
+    "email": "profesor@edutrack.cl",
+    "password": "Sup3rS3cret!",
+    "displayName": "Prof. Soto"
+  }
+}
+
+docs {
+  Crea un usuario nuevo. La contraseña se almacena hasheada con Argon2.
+  Requiere rol SUPERUSER o ADMIN.
+}

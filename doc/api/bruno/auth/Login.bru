@@ -1,0 +1,36 @@
+meta {
+  name: Login
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/auth/login
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "email": "admin@edutrack.cl",
+    "password": "changeme123!"
+  }
+}
+
+script:post-response {
+  if (res.status === 200) {
+    bru.setVar("accessToken", res.body.accessToken);
+    bru.setVar("refreshToken", res.body.refreshToken);
+  }
+}
+
+docs {
+  Autentica al usuario con email + contraseña y devuelve un par
+  (accessToken JWT RS256, refreshToken opaco). Guarda ambos tokens
+  en variables de runtime de la colección para usarlos en las siguientes
+  peticiones.
+}

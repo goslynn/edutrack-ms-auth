@@ -1,0 +1,19 @@
+meta {
+  name: Delete permission
+  type: http
+  seq: 3
+}
+
+delete {
+  url: {{baseUrl}}/auth/roles/{{roleId}}/permissions/:resourceUuid
+  body: none
+  auth: none
+}
+
+params:path {
+  resourceUuid: {{resourceUuid}}
+}
+
+headers {
+  X-User-Roles: {{userRoles}}
+}

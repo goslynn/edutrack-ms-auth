@@ -1,0 +1,20 @@
+meta {
+  name: Revoke user sessions
+  type: http
+  seq: 6
+}
+
+delete {
+  url: {{baseUrl}}/auth/users/{{userId}}/sessions
+  body: none
+  auth: none
+}
+
+headers {
+  X-User-Roles: {{userRoles}}
+}
+
+docs {
+  Revoca todos los refresh tokens activos del usuario. Útil para forzar el
+  cierre de sesión remoto desde un panel de administración.
+}

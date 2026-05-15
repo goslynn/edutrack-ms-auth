@@ -1,0 +1,27 @@
+meta {
+  name: Update role
+  type: http
+  seq: 4
+}
+
+put {
+  url: {{baseUrl}}/auth/roles/:roleId
+  body: json
+  auth: none
+}
+
+params:path {
+  roleId: {{roleId}}
+}
+
+headers {
+  Content-Type: application/json
+  X-User-Roles: {{userRoles}}
+}
+
+body:json {
+  {
+    "name": "COORDINADOR",
+    "description": "Coordinador académico de ciclo"
+  }
+}

@@ -1,0 +1,33 @@
+meta {
+  name: Create role
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/auth/roles
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+  X-User-Roles: {{userRoles}}
+}
+
+body:json {
+  {
+    "name": "COORDINADOR",
+    "description": "Coordinador académico"
+  }
+}
+
+script:post-response {
+  if (res.status === 201 && res.body && res.body.id) {
+    bru.setVar("roleId", res.body.id);
+  }
+}
+
+docs {
+  Crea un rol nuevo. El nombre debe ser único.
+}

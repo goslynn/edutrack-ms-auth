@@ -1,0 +1,16 @@
+meta {
+  name: JWKS
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/.well-known/jwks.json
+  body: none
+  auth: none
+}
+
+docs {
+  Devuelve las llaves públicas RSA (formato JWKS) que otros microservicios
+  usan para verificar la firma de los JWT emitidos por Auth Service.
+}

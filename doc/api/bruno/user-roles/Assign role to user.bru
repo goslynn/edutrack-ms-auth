@@ -1,0 +1,23 @@
+meta {
+  name: Assign role to user
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/auth/users/{{userId}}/roles/:roleId
+  body: none
+  auth: none
+}
+
+params:path {
+  roleId: {{roleId}}
+}
+
+headers {
+  X-User-Roles: {{userRoles}}
+}
+
+docs {
+  Asigna un rol a un usuario. Idempotente: re-asignar el mismo rol no falla.
+}

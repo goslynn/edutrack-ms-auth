@@ -1,0 +1,23 @@
+meta {
+  name: Revoke role from user
+  type: http
+  seq: 3
+}
+
+delete {
+  url: {{baseUrl}}/auth/users/{{userId}}/roles/:roleId
+  body: none
+  auth: none
+}
+
+params:path {
+  roleId: {{roleId}}
+}
+
+headers {
+  X-User-Roles: {{userRoles}}
+}
+
+docs {
+  Revoca un rol previamente asignado a un usuario.
+}

@@ -1,0 +1,25 @@
+meta {
+  name: Effective flags
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{baseUrl}}/auth/roles/{{roleId}}/permissions/effective?resourceUuid={{resourceUuid}}
+  body: none
+  auth: none
+}
+
+params:query {
+  resourceUuid: {{resourceUuid}}
+}
+
+headers {
+  X-User-Roles: {{userRoles}}
+}
+
+docs {
+  Devuelve los flags efectivos (OR de todos los permisos del rol) sobre el
+  recurso indicado. Útil para que otros microservicios consulten autorización
+  antes de servir un endpoint.
+}

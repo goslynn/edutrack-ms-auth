@@ -1,0 +1,32 @@
+meta {
+  name: Update user
+  type: http
+  seq: 4
+}
+
+put {
+  url: {{baseUrl}}/auth/users/:userId
+  body: json
+  auth: none
+}
+
+params:path {
+  userId: {{userId}}
+}
+
+headers {
+  Content-Type: application/json
+  X-User-Roles: {{userRoles}}
+}
+
+body:json {
+  {
+    "displayName": "Prof. Soto Toro",
+    "enabled": true
+  }
+}
+
+docs {
+  Actualiza displayName y/o el flag enabled de un usuario.
+  No permite cambiar el email ni la contraseña por este endpoint.
+}

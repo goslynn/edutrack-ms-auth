@@ -1,0 +1,20 @@
+meta {
+  name: List roles of user
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/auth/users/{{userId}}/roles
+  body: none
+  auth: none
+}
+
+headers {
+  X-User-Roles: {{userRoles}}
+  X-User-Id: {{userId}}
+}
+
+docs {
+  Lista los roles asignados a un usuario. Permite self-read.
+}

@@ -1,0 +1,19 @@
+meta {
+  name: List users
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/auth/users
+  body: none
+  auth: none
+}
+
+headers {
+  X-User-Roles: {{userRoles}}
+}
+
+docs {
+  Lista todos los usuarios. Requiere rol SUPERUSER o ADMIN.
+}

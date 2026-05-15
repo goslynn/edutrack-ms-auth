@@ -1,0 +1,615 @@
+openapi: 3.1.0
+info:
+  title: EduTrack Auth Service API
+  description: |
+    Microservicio de autenticación y autorización de EduTrack.
+
+    Emite JWT RS256, gestiona usuarios, roles dinámicos y un modelo de permisos
+    Unix-style (`r=4, w=2, x=1`) por par `(role_uuid, resource_uuid)`.
+
+    ## Autorización
+
+    En producción el API Gateway valida el JWT y propaga dos headers internos a
+    cada microservicio:
+
+    - `X-User-Id`: UUID del usuario autenticado (claim `sub`).
+    - `X-User-Roles`: lista separada por comas de roles del usuario (claim `roles[]`).
+
+    El propio Auth Service consume esos mismos headers para autorizar operaciones
+    administrativas. Los endpoints `/auth/login`, `/auth/refresh` y
+    `/.well-known/jwks.json` son públicos.
+
+    ## Permisos (flags Unix-style)
+
+    | Bit | Valor | Significado |
+    |---|---|---|
+    | r | 4 | read |
+    | w | 2 | write |
+    | x | 1 | execute / acción de dominio |
+
+    El `flags` es un `SMALLINT` 0-7. `flagsLabel` es la representación textual
+    (`rwx`, `r--`, etc.). El `resource_uuid` es opaco para Auth: cada otro MS
+    registra sus propios recursos.
+  version: 1.0.0
+  contact:
+    name: EduTrack Backend
+    email: backend@edutrack.cl
+  license:
+    name: Propietario - Colegio Bernardo O'Higgins
+servers:
+  - url: http://localhost:8080
+    description: Desarrollo local
+  - url: https://api.edutrack.cl
+    description: Producción (vía API Gateway)
+tags:
+  - name: auth
+    description: Login, refresh y logout
+  - name: jwks
+    description: Llaves públicas para verificación de JWT
+  - name: users
+    description: Gestión de usuarios
+  - name: user-roles
+    description: Asignación de roles a usuarios
+  - name: roles
+    description: Gestión de roles
+  - name: permissions
+    description: Permisos role-recurso
+security: []
+paths:
+  /auth/login:
+    post:
+      tags: [auth]
+      summary: Autenticar con email + contraseña
+      description: Devuelve un par `accessToken` (JWT RS256) + `refreshToken`.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+            examples:
+              admin:
+                value:
+                  email: admin@edutrack.cl
+                  password: changeme123!
+      responses:
+        '200':
+          description: Autenticación exitosa
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+              examples:
+                ok:
+                  value:
+                    accessToken: eyJraWQiOiJlZHV0cmFjay1hdXRoLWtleS0xIiwidHlwIjoiSldUIiwiYWxnIjoiUlMyNTYifQ...
+                    refreshToken: 9f8a7e6d5c4b3a2918f7e6d5c4b3a291
+                    tokenType: Bearer
+                    expiresIn: 900
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /auth/refresh:
+    post:
+      tags: [auth]
+      summary: Renovar access token usando refresh token
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefreshRequest'
+            examples:
+              default:
+                value:
+                  refreshToken: 9f8a7e6d5c4b3a2918f7e6d5c4b3a291
+      responses:
+        '200':
+          description: Token renovado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /auth/logout:
+    post:
+      tags: [auth]
+      summary: Revocar todas las sesiones del usuario
+      description: Revoca todos los refresh tokens del usuario indicado por `X-User-Id`.
+      parameters:
+        - $ref: '#/components/parameters/XUserId'
+      responses:
+        '204': { description: Sesiones revocadas }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /.well-known/jwks.json:
+    get:
+      tags: [jwks]
+      summary: JWKS para verificación de JWT
+      description: Llaves públicas RSA que otros servicios usan para validar el JWT.
+      security: []
+      responses:
+        '200':
+          description: JWKS
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  keys:
+                    type: array
+                    items:
+                      type: object
+              examples:
+                default:
+                  value:
+                    keys:
+                      - kty: RSA
+                        kid: edutrack-auth-key-1
+                        use: sig
+                        alg: RS256
+                        n: 0vx7agoebGcQSuuPiLJXZptN9nndrQmbXEps...
+                        e: AQAB
+
+  /auth/users:
+    get:
+      tags: [users]
+      summary: Listar usuarios
+      parameters:
+        - $ref: '#/components/parameters/XUserRoles'
+      responses:
+        '200':
+          description: Lista de usuarios (vista List)
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/UserListItem'
+        '403': { $ref: '#/components/responses/Forbidden' }
+    post:
+      tags: [users]
+      summary: Crear usuario
+      parameters:
+        - $ref: '#/components/parameters/XUserRoles'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserCreateRequest'
+            examples:
+              default:
+                value:
+                  email: profesor@edutrack.cl
+                  password: Sup3rS3cret!
+                  displayName: Prof. Soto
+      responses:
+        '201':
+          description: Usuario creado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserDetailed'
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409': { $ref: '#/components/responses/Conflict' }
+  /auth/users/{id}:
+    parameters:
+      - $ref: '#/components/parameters/UserIdPath'
+    get:
+      tags: [users]
+      summary: Obtener usuario por id
+      description: Permite self-read (cuando `X-User-Id == {id}`) sin requerir rol admin.
+      parameters:
+        - $ref: '#/components/parameters/XUserRoles'
+        - $ref: '#/components/parameters/XUserId'
+      responses:
+        '200':
+          description: Detalle de usuario
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserDetailed'
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    put:
+      tags: [users]
+      summary: Actualizar usuario
+      parameters:
+        - $ref: '#/components/parameters/XUserRoles'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserUpdateRequest'
+            examples:
+              default:
+                value:
+                  displayName: Prof. Soto Toro
+                  enabled: true
+      responses:
+        '200':
+          description: Usuario actualizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserDetailed'
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    delete:
+      tags: [users]
+      summary: Deshabilitar usuario (soft delete)
+      parameters:
+        - $ref: '#/components/parameters/XUserRoles'
+      responses:
+        '204': { description: Usuario deshabilitado }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /auth/users/{id}/sessions:
+    delete:
+      tags: [users]
+      summary: Revocar sesiones de un usuario
+      parameters:
+        - $ref: '#/components/parameters/UserIdPath'
+        - $ref: '#/components/parameters/XUserRoles'
+      responses:
+        '204': { description: Sesiones revocadas }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /auth/users/{userId}/roles:
+    parameters:
+      - name: userId
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+    get:
+      tags: [user-roles]
+      summary: Listar roles de un usuario
+      parameters:
+        - $ref: '#/components/parameters/XUserRoles'
+        - $ref: '#/components/parameters/XUserId'
+      responses:
+        '200':
+          description: Roles del usuario
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/RoleListItem' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /auth/users/{userId}/roles/{roleId}:
+    parameters:
+      - name: userId
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+      - name: roleId
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+    post:
+      tags: [user-roles]
+      summary: Asignar un rol a un usuario
+      parameters:
+        - $ref: '#/components/parameters/XUserRoles'
+      responses:
+        '201': { description: Rol asignado }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    delete:
+      tags: [user-roles]
+      summary: Revocar un rol de un usuario
+      parameters:
+        - $ref: '#/components/parameters/XUserRoles'
+      responses:
+        '204': { description: Rol revocado }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /auth/roles:
+    get:
+      tags: [roles]
+      summary: Listar roles
+      parameters:
+        - $ref: '#/components/parameters/XUserRoles'
+      responses:
+        '200':
+          description: Roles
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/RoleListItem' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    post:
+      tags: [roles]
+      summary: Crear rol
+      parameters:
+        - $ref: '#/components/parameters/XUserRoles'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RoleCreateRequest'
+            examples:
+              default:
+                value:
+                  name: COORDINADOR
+                  description: Coordinador académico
+      responses:
+        '201':
+          description: Rol creado
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RoleDetailed' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409': { $ref: '#/components/responses/Conflict' }
+  /auth/roles/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+    get:
+      tags: [roles]
+      summary: Obtener rol
+      parameters:
+        - $ref: '#/components/parameters/XUserRoles'
+      responses:
+        '200':
+          description: Detalle
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RoleDetailed' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    put:
+      tags: [roles]
+      summary: Actualizar rol
+      parameters:
+        - $ref: '#/components/parameters/XUserRoles'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/RoleUpdateRequest' }
+            examples:
+              default:
+                value:
+                  name: COORDINADOR
+                  description: Coordinador académico de ciclo
+      responses:
+        '200':
+          description: Rol actualizado
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RoleDetailed' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    delete:
+      tags: [roles]
+      summary: Eliminar rol
+      parameters:
+        - $ref: '#/components/parameters/XUserRoles'
+      responses:
+        '204': { description: Rol eliminado }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /auth/roles/{roleId}/permissions:
+    parameters:
+      - name: roleId
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+    get:
+      tags: [permissions]
+      summary: Listar permisos de un rol
+      parameters:
+        - $ref: '#/components/parameters/XUserRoles'
+      responses:
+        '200':
+          description: Permisos
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/PermissionResponse' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /auth/roles/{roleId}/permissions/{resourceUuid}:
+    parameters:
+      - name: roleId
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+      - name: resourceUuid
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+    put:
+      tags: [permissions]
+      summary: Crear o actualizar permiso (upsert)
+      parameters:
+        - $ref: '#/components/parameters/XUserRoles'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/PermissionRequest' }
+            examples:
+              read-write:
+                summary: r-- (read)
+                value: { flags: 4 }
+              rwx:
+                summary: rwx
+                value: { flags: 7 }
+      responses:
+        '200':
+          description: Permiso vigente
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PermissionResponse' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    delete:
+      tags: [permissions]
+      summary: Eliminar permiso
+      parameters:
+        - $ref: '#/components/parameters/XUserRoles'
+      responses:
+        '204': { description: Permiso eliminado }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /auth/roles/{roleId}/permissions/effective:
+    get:
+      tags: [permissions]
+      summary: Flags efectivos para un recurso
+      description: |
+        OR de los flags del rol indicado para el recurso. Útil para que otros MS
+        consulten autorización antes de servir un endpoint.
+      parameters:
+        - name: roleId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+        - name: resourceUuid
+          in: query
+          required: true
+          schema: { type: string, format: uuid }
+        - $ref: '#/components/parameters/XUserRoles'
+      responses:
+        '200':
+          description: Flags efectivos
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PermissionResponse' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+components:
+  parameters:
+    XUserId:
+      name: X-User-Id
+      in: header
+      required: true
+      description: UUID del usuario autenticado (propagado por el API Gateway).
+      schema: { type: string, format: uuid }
+    XUserRoles:
+      name: X-User-Roles
+      in: header
+      required: true
+      description: |
+        Lista de roles del usuario separados por comas. Ej: `SUPERUSER,ADMIN`.
+      schema: { type: string }
+      example: SUPERUSER,ADMIN
+    UserIdPath:
+      name: id
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+  responses:
+    BadRequest:
+      description: Petición mal formada o validación fallida
+    Unauthorized:
+      description: Credenciales inválidas o token ausente / revocado
+    Forbidden:
+      description: El usuario autenticado no tiene rol suficiente
+    NotFound:
+      description: Recurso inexistente
+    Conflict:
+      description: Conflicto de unicidad (email o nombre ya existe)
+  schemas:
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email: { type: string, format: email, example: admin@edutrack.cl }
+        password: { type: string, format: password, example: changeme123! }
+    RefreshRequest:
+      type: object
+      required: [refreshToken]
+      properties:
+        refreshToken: { type: string }
+    AuthResponse:
+      type: object
+      properties:
+        accessToken: { type: string, description: JWT RS256 firmado por Auth Service }
+        refreshToken: { type: string, description: Token opaco usado en /auth/refresh }
+        tokenType: { type: string, example: Bearer }
+        expiresIn: { type: integer, description: Segundos de validez del access token, example: 900 }
+    UserListItem:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        email: { type: string, format: email }
+        displayName: { type: string }
+        enabled: { type: boolean }
+        roleIds:
+          type: array
+          items: { type: string, format: uuid }
+    UserDetailed:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        email: { type: string, format: email }
+        displayName: { type: string }
+        enabled: { type: boolean }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+        roleIds:
+          type: array
+          items: { type: string, format: uuid }
+    UserCreateRequest:
+      type: object
+      required: [email, password, displayName]
+      properties:
+        email: { type: string, format: email, maxLength: 255 }
+        password: { type: string, format: password, minLength: 8, maxLength: 128 }
+        displayName: { type: string, maxLength: 30 }
+    UserUpdateRequest:
+      type: object
+      properties:
+        displayName: { type: string, maxLength: 30 }
+        enabled: { type: boolean }
+    RoleListItem:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        description: { type: string }
+    RoleDetailed:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        description: { type: string }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    RoleCreateRequest:
+      type: object
+      required: [name]
+      properties:
+        name: { type: string, maxLength: 100 }
+        description: { type: string, maxLength: 500 }
+    RoleUpdateRequest:
+      $ref: '#/components/schemas/RoleCreateRequest'
+    PermissionRequest:
+      type: object
+      required: [flags]
+      properties:
+        flags:
+          type: integer
+          minimum: 0
+          maximum: 7
+          description: 'r=4, w=2, x=1 (combinables vía OR)'
+    PermissionResponse:
+      type: object
+      properties:
+        roleId: { type: string, format: uuid }
+        resourceUuid: { type: string, format: uuid }
+        flags: { type: integer, minimum: 0, maximum: 7 }
+        flagsLabel: { type: string, example: rwx }
