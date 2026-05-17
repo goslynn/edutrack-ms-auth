@@ -4,7 +4,7 @@ import cl.duocuc.edutrack.ms.auth.model.dto.PermissionRequest;
 import cl.duocuc.edutrack.ms.auth.model.dto.PermissionResponse;
 import cl.duocuc.edutrack.ms.auth.model.dto.Views;
 import cl.duocuc.edutrack.ms.auth.service.PermissionService;
-import cl.duocuc.edutrack.ms.auth.service.RoleGuard;
+//import cl.duocuc.edutrack.ms.auth.service.RoleGuard;
 import com.fasterxml.jackson.annotation.JsonView;
 import jakarta.inject.Inject;
 import jakarta.validation.Valid;
@@ -23,8 +23,8 @@ public class RolePermissionResource {
     @Inject
     PermissionService permissionService;
 
-    @Inject
-    RoleGuard roleGuard;
+//    @Inject
+//    RoleGuard roleGuard;
 
     @GET
     @JsonView(Views.List.class)
@@ -32,7 +32,7 @@ public class RolePermissionResource {
         @HeaderParam("X-User-Roles") String rolesHeader,
         @PathParam("roleId") UUID roleId
     ) {
-        roleGuard.requireAnyRole(rolesHeader, "SUPERUSER", "ADMIN");
+        //roleGuard.requireAnyRole(rolesHeader, "SUPERUSER", "ADMIN");
         return permissionService.listByRole(roleId).stream()
             .map(permissionService::toResponse)
             .toList();
@@ -47,7 +47,7 @@ public class RolePermissionResource {
         @PathParam("resourceUuid") UUID resourceUuid,
         @Valid @JsonView(Views.Update.class) PermissionRequest req
     ) {
-        roleGuard.requireAnyRole(rolesHeader, "SUPERUSER", "ADMIN");
+        //roleGuard.requireAnyRole(rolesHeader, "SUPERUSER", "ADMIN");
         return permissionService.toResponse(permissionService.upsert(roleId, resourceUuid, req.flags()));
     }
 
@@ -58,7 +58,7 @@ public class RolePermissionResource {
         @PathParam("roleId") UUID roleId,
         @PathParam("resourceUuid") UUID resourceUuid
     ) {
-        roleGuard.requireAnyRole(rolesHeader, "SUPERUSER", "ADMIN");
+        //roleGuard.requireAnyRole(rolesHeader, "SUPERUSER", "ADMIN");
         permissionService.delete(roleId, resourceUuid);
         return Response.noContent().build();
     }
@@ -75,7 +75,7 @@ public class RolePermissionResource {
         @PathParam("roleId") UUID roleId,
         @QueryParam("resourceUuid") UUID resourceUuid
     ) {
-        roleGuard.requireAnyRole(rolesHeader, "SUPERUSER", "ADMIN", "DOCENTE");
+        //roleGuard.requireAnyRole(rolesHeader, "SUPERUSER", "ADMIN", "DOCENTE");
         short flags = permissionService.computeEffectiveFlags(List.of(roleId), resourceUuid);
         return new PermissionResponse(roleId, resourceUuid, flags, PermissionResponse.toLabel(flags));
     }

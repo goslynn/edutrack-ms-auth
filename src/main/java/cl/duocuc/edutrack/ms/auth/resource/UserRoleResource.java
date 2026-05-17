@@ -2,7 +2,7 @@ package cl.duocuc.edutrack.ms.auth.resource;
 
 import cl.duocuc.edutrack.ms.auth.model.dto.RoleResponse;
 import cl.duocuc.edutrack.ms.auth.model.dto.Views;
-import cl.duocuc.edutrack.ms.auth.service.RoleGuard;
+//import cl.duocuc.edutrack.ms.auth.service.RoleGuard;
 import cl.duocuc.edutrack.ms.auth.service.RoleService;
 import cl.duocuc.edutrack.ms.auth.service.UserRoleService;
 import com.fasterxml.jackson.annotation.JsonView;
@@ -25,8 +25,8 @@ public class UserRoleResource {
     @Inject
     RoleService roleService;
 
-    @Inject
-    RoleGuard roleGuard;
+//    @Inject
+//    RoleGuard roleGuard;
 
     @GET
     @JsonView(Views.List.class)
@@ -36,7 +36,7 @@ public class UserRoleResource {
         @PathParam("userId") UUID userId
     ) {
         boolean isSelf = userIdHeader != null && userId.toString().equals(userIdHeader.trim());
-        if (!isSelf) roleGuard.requireAnyRole(rolesHeader, "SUPERUSER", "ADMIN");
+        //if (!isSelf) roleGuard.requireAnyRole(rolesHeader, "SUPERUSER", "ADMIN");
         return userRoleService.findRolesByUser(userId).stream()
             .map(roleService::toResponse)
             .toList();
@@ -49,7 +49,7 @@ public class UserRoleResource {
         @PathParam("userId") UUID userId,
         @PathParam("roleId") UUID roleId
     ) {
-        roleGuard.requireAnyRole(rolesHeader, "SUPERUSER", "ADMIN");
+        //roleGuard.requireAnyRole(rolesHeader, "SUPERUSER", "ADMIN");
         userRoleService.assign(userId, roleId);
         return Response.status(Response.Status.CREATED).build();
     }
@@ -61,7 +61,7 @@ public class UserRoleResource {
         @PathParam("userId") UUID userId,
         @PathParam("roleId") UUID roleId
     ) {
-        roleGuard.requireAnyRole(rolesHeader, "SUPERUSER", "ADMIN");
+        //roleGuard.requireAnyRole(rolesHeader, "SUPERUSER", "ADMIN");
         userRoleService.revoke(userId, roleId);
         return Response.noContent().build();
     }

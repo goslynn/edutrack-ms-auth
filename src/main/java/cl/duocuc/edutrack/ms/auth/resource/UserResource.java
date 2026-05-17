@@ -5,7 +5,7 @@ import cl.duocuc.edutrack.ms.auth.model.dto.UserResponse;
 import cl.duocuc.edutrack.ms.auth.model.dto.Views;
 import cl.duocuc.edutrack.ms.auth.model.entity.User;
 import cl.duocuc.edutrack.ms.auth.service.AuthService;
-import cl.duocuc.edutrack.ms.auth.service.RoleGuard;
+//import cl.duocuc.edutrack.ms.auth.service.RoleGuard;
 import cl.duocuc.edutrack.ms.auth.service.UserService;
 import com.fasterxml.jackson.annotation.JsonView;
 import jakarta.inject.Inject;
@@ -28,13 +28,13 @@ public class UserResource {
     @Inject
     AuthService authService;
 
-    @Inject
-    RoleGuard roleGuard;
+//    @Inject
+//    RoleGuard roleGuard;
 
     @GET
     @JsonView(Views.List.class)
     public List<UserResponse> list(@HeaderParam("X-User-Roles") String rolesHeader) {
-        roleGuard.requireAnyRole(rolesHeader, "SUPERUSER", "ADMIN");
+        //roleGuard.requireAnyRole(rolesHeader, "SUPERUSER", "ADMIN");
         return userService.listAll().stream().map(userService::toResponse).toList();
     }
 
@@ -44,7 +44,7 @@ public class UserResource {
         @HeaderParam("X-User-Roles") String rolesHeader,
         @Valid @JsonView(Views.Create.class) UserRequest req
     ) {
-        roleGuard.requireAnyRole(rolesHeader, "SUPERUSER", "ADMIN");
+        //roleGuard.requireAnyRole(rolesHeader, "SUPERUSER", "ADMIN");
         if (req.email() == null || req.email().isBlank()
             || req.password() == null || req.password().isBlank()
             || req.displayName() == null || req.displayName().isBlank()) {
@@ -65,7 +65,7 @@ public class UserResource {
         @PathParam("id") UUID id
     ) {
         boolean isSelf = userIdHeader != null && id.toString().equals(userIdHeader.trim());
-        if (!isSelf) roleGuard.requireAnyRole(rolesHeader, "SUPERUSER", "ADMIN");
+        //if (!isSelf) roleGuard.requireAnyRole(rolesHeader, "SUPERUSER", "ADMIN");
         return userService.toResponse(userService.findById(id));
     }
 
@@ -77,7 +77,7 @@ public class UserResource {
         @PathParam("id") UUID id,
         @Valid @JsonView(Views.Update.class) UserRequest req
     ) {
-        roleGuard.requireAnyRole(rolesHeader, "SUPERUSER", "ADMIN");
+        //roleGuard.requireAnyRole(rolesHeader, "SUPERUSER", "ADMIN");
         User user = userService.update(id, req.displayName(), req.enabled());
         return userService.toResponse(user);
     }
@@ -88,7 +88,7 @@ public class UserResource {
         @HeaderParam("X-User-Roles") String rolesHeader,
         @PathParam("id") UUID id
     ) {
-        roleGuard.requireAnyRole(rolesHeader, "SUPERUSER", "ADMIN");
+        //roleGuard.requireAnyRole(rolesHeader, "SUPERUSER", "ADMIN");
         userService.disable(id);
         return Response.noContent().build();
     }
@@ -99,7 +99,7 @@ public class UserResource {
         @HeaderParam("X-User-Roles") String rolesHeader,
         @PathParam("id") UUID id
     ) {
-        roleGuard.requireAnyRole(rolesHeader, "SUPERUSER", "ADMIN");
+        //roleGuard.requireAnyRole(rolesHeader, "SUPERUSER", "ADMIN");
         userService.findById(id);
         authService.logout(id);
         return Response.noContent().build();
