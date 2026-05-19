@@ -4,7 +4,9 @@ import cl.duocuc.edutrack.ms.auth.model.dto.PermissionRequest;
 import cl.duocuc.edutrack.ms.auth.model.dto.PermissionResponse;
 import cl.duocuc.edutrack.ms.auth.model.dto.Views;
 import cl.duocuc.edutrack.ms.auth.service.PermissionService;
-//import cl.duocuc.edutrack.ms.auth.service.RoleGuard;
+import cl.duocuc.edutrack.ms.infrastructure.security.AuthResourceId;
+import cl.duocuc.edutrack.ms.infrastructure.security.Permission;
+import cl.duocuc.edutrack.ms.infrastructure.security.RequirePermission;
 import com.fasterxml.jackson.annotation.JsonView;
 import jakarta.inject.Inject;
 import jakarta.validation.Valid;
@@ -23,16 +25,12 @@ public class RolePermissionResource {
     @Inject
     PermissionService permissionService;
 
-//    @Inject
-//    RoleGuard roleGuard;
-
     @GET
     @JsonView(Views.List.class)
+    @RequirePermission(resource = AuthResourceId.PERMISSIONS, value = Permission.READ)
     public List<PermissionResponse> list(
-        @HeaderParam("X-User-Roles") String rolesHeader,
         @PathParam("roleId") UUID roleId
     ) {
-        //roleGuard.requireAnyRole(rolesHeader, "SUPERUSER", "ADMIN");
         return permissionService.listByRole(roleId).stream()
             .map(permissionService::toResponse)
             .toList();
@@ -41,24 +39,22 @@ public class RolePermissionResource {
     @PUT
     @Path("/{resourceUuid}")
     @JsonView(Views.Detailed.class)
+    @RequirePermission(resource = AuthResourceId.PERMISSIONS, value = Permission.WRITE)
     public PermissionResponse upsert(
-        @HeaderParam("X-User-Roles") String rolesHeader,
         @PathParam("roleId") UUID roleId,
         @PathParam("resourceUuid") UUID resourceUuid,
         @Valid @JsonView(Views.Update.class) PermissionRequest req
     ) {
-        //roleGuard.requireAnyRole(rolesHeader, "SUPERUSER", "ADMIN");
         return permissionService.toResponse(permissionService.upsert(roleId, resourceUuid, req.flags()));
     }
 
     @DELETE
     @Path("/{resourceUuid}")
+    @RequirePermission(resource = AuthResourceId.PERMISSIONS, value = Permission.WRITE)
     public Response delete(
-        @HeaderParam("X-User-Roles") String rolesHeader,
         @PathParam("roleId") UUID roleId,
         @PathParam("resourceUuid") UUID resourceUuid
     ) {
-        //roleGuard.requireAnyRole(rolesHeader, "SUPERUSER", "ADMIN");
         permissionService.delete(roleId, resourceUuid);
         return Response.noContent().build();
     }
@@ -70,12 +66,11 @@ public class RolePermissionResource {
     @GET
     @Path("/effective")
     @JsonView(Views.Detailed.class)
+    @RequirePermission(resource = AuthResourceId.PERMISSIONS_EFFECTIVE, value = Permission.READ)
     public PermissionResponse effectiveFlags(
-        @HeaderParam("X-User-Roles") String rolesHeader,
         @PathParam("roleId") UUID roleId,
         @QueryParam("resourceUuid") UUID resourceUuid
     ) {
-        //roleGuard.requireAnyRole(rolesHeader, "SUPERUSER", "ADMIN", "DOCENTE");
         short flags = permissionService.computeEffectiveFlags(List.of(roleId), resourceUuid);
         return new PermissionResponse(roleId, resourceUuid, flags, PermissionResponse.toLabel(flags));
     }

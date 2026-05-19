@@ -3,7 +3,9 @@ package cl.duocuc.edutrack.ms.auth.resource;
 import cl.duocuc.edutrack.ms.auth.model.dto.RoleRequest;
 import cl.duocuc.edutrack.ms.auth.model.dto.RoleResponse;
 import cl.duocuc.edutrack.ms.auth.model.dto.Views;
-//import cl.duocuc.edutrack.ms.auth.service.RoleGuard;
+import cl.duocuc.edutrack.ms.infrastructure.security.AuthResourceId;
+import cl.duocuc.edutrack.ms.infrastructure.security.Permission;
+import cl.duocuc.edutrack.ms.infrastructure.security.RequirePermission;
 import cl.duocuc.edutrack.ms.auth.service.RoleService;
 import com.fasterxml.jackson.annotation.JsonView;
 import jakarta.inject.Inject;
@@ -23,23 +25,19 @@ public class RoleResource {
     @Inject
     RoleService roleService;
 
-//    @Inject
-//    RoleGuard roleGuard;
-
     @GET
     @JsonView(Views.List.class)
-    public List<RoleResponse> list(@HeaderParam("X-User-Roles") String rolesHeader) {
-        //roleGuard.requireAnyRole(rolesHeader, "SUPERUSER", "ADMIN", "DOCENTE");
+    @RequirePermission(resource = AuthResourceId.ROLES, value = Permission.READ)
+    public List<RoleResponse> list() {
         return roleService.listAll().stream().map(roleService::toResponse).toList();
     }
 
     @POST
     @JsonView(Views.Detailed.class)
+    @RequirePermission(resource = AuthResourceId.ROLES, value = Permission.WRITE)
     public Response create(
-        @HeaderParam("X-User-Roles") String rolesHeader,
         @Valid @JsonView(Views.Create.class) RoleRequest req
     ) {
-        //roleGuard.requireAnyRole(rolesHeader, "SUPERUSER", "ADMIN");
         if (req.name() == null || req.name().isBlank()) {
             throw new WebApplicationException(Response.Status.BAD_REQUEST);
         }
@@ -51,33 +49,26 @@ public class RoleResource {
     @GET
     @Path("/{id}")
     @JsonView(Views.Detailed.class)
-    public RoleResponse get(
-        @HeaderParam("X-User-Roles") String rolesHeader,
-        @PathParam("id") UUID id
-    ) {
-        //roleGuard.requireAnyRole(rolesHeader, "SUPERUSER", "ADMIN", "DOCENTE");
+    @RequirePermission(resource = AuthResourceId.ROLES, value = Permission.READ)
+    public RoleResponse get(@PathParam("id") UUID id) {
         return roleService.toResponse(roleService.findById(id));
     }
 
     @PUT
     @Path("/{id}")
     @JsonView(Views.Detailed.class)
+    @RequirePermission(resource = AuthResourceId.ROLES, value = Permission.WRITE)
     public RoleResponse update(
-        @HeaderParam("X-User-Roles") String rolesHeader,
         @PathParam("id") UUID id,
         @Valid @JsonView(Views.Update.class) RoleRequest req
     ) {
-        //roleGuard.requireAnyRole(rolesHeader, "SUPERUSER", "ADMIN");
         return roleService.toResponse(roleService.update(id, req.name(), req.description()));
     }
 
     @DELETE
     @Path("/{id}")
-    public Response delete(
-        @HeaderParam("X-User-Roles") String rolesHeader,
-        @PathParam("id") UUID id
-    ) {
-        //roleGuard.requireAnyRole(rolesHeader, "SUPERUSER", "ADMIN");
+    @RequirePermission(resource = AuthResourceId.ROLES, value = Permission.WRITE)
+    public Response delete(@PathParam("id") UUID id) {
         roleService.delete(id);
         return Response.noContent().build();
     }
