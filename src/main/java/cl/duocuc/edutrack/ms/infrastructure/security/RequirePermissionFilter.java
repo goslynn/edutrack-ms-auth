@@ -1,6 +1,8 @@
 package cl.duocuc.edutrack.ms.infrastructure.security;
 
 import cl.duocuc.edutrack.ms.auth.service.PermissionService;
+import cl.duocuc.edutrack.ms.infrastructure.context.RequestContext;
+import cl.duocuc.edutrack.ms.infrastructure.context.RequestHeaders;
 import jakarta.annotation.Priority;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.Priorities;
@@ -13,7 +15,6 @@ import jakarta.ws.rs.core.UriInfo;
 import jakarta.ws.rs.ext.Provider;
 
 import java.lang.reflect.Method;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -29,6 +30,9 @@ public class RequirePermissionFilter implements ContainerRequestFilter {
 
     @Inject
     PermissionService permissionService;
+
+    @Inject
+    RequestContext requestContext;
 
     @Context
     ResourceInfo resourceInfo;
@@ -47,20 +51,17 @@ public class RequirePermissionFilter implements ContainerRequestFilter {
         }
         if (ann == null) return;
 
+        RequestHeaders headers = requestContext.headers();
+
         // Excepción "self": el dueño del recurso accede sin chequear permisos.
-        if (!ann.selfParam().isEmpty()) {
-            String userId = trimToNull(ctx.getHeaderString("X-User-Id"));
+        if (!ann.selfParam().isEmpty() && headers.hasIdentity()) {
             String pathVal = uriInfo.getPathParameters().getFirst(ann.selfParam());
-            if (userId != null && userId.equals(pathVal)) {
+            if (headers.userId().get().toString().equals(pathVal)) {
                 return;
             }
         }
 
-        List<UUID> roleIds = parseRoleIds(ctx.getHeaderString("X-User-Roles"));
-        if (roleIds == null) { // header malformado
-            abort(ctx);
-            return;
-        }
+        List<UUID> roleIds = headers.roleIds();
 
         // Flags del recurso concreto OR flags del comodín ALL (un grant sobre
         // ALL — p.ej. SUPERUSER — concede acceso a todo recurso presente/futuro).
@@ -74,31 +75,5 @@ public class RequirePermissionFilter implements ContainerRequestFilter {
 
     private static void abort(ContainerRequestContext ctx) {
         ctx.abortWith(Response.status(Response.Status.FORBIDDEN).build());
-    }
-
-    private static String trimToNull(String s) {
-        if (s == null) return null;
-        String t = s.trim();
-        return t.isEmpty() ? null : t;
-    }
-
-    /**
-     * Convierte el header {@code X-User-Roles} (UUIDs separados por coma) a una
-     * lista. Devuelve lista vacía si no hay roles, o {@code null} si algún token
-     * no es un UUID válido (request se rechaza, igual que el viejo RoleGuard).
-     */
-    private static List<UUID> parseRoleIds(String header) {
-        List<UUID> ids = new ArrayList<>();
-        if (header == null || header.isBlank()) return ids;
-        for (String token : header.split(",")) {
-            String t = token.trim();
-            if (t.isEmpty()) continue;
-            try {
-                ids.add(UUID.fromString(t));
-            } catch (IllegalArgumentException e) {
-                return null;
-            }
-        }
-        return ids;
     }
 }

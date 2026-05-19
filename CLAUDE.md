@@ -195,4 +195,42 @@ Convención de anotación:
 
 `PermissionRequest.flags` usa `@Min(0) @Max(7)` en `Default`; el `PUT` lo valida con `@Valid` simple (sin grupo).
 
-**Frontera de alcance:** la regla cubre *validación de datos*. Los guards de **autenticación/identidad** no son validación de datos: en `AuthResource.logout`, la ausencia del header `X-User-Id` es `401` (sin identidad propagada no hay a quién revocar) y se mantiene como check explícito; el *formato* del UUID sí es dato y lo resuelve JAX-RS tipando el parámetro como `UUID` (conversión fallida de `@HeaderParam` ⇒ `400`, sin `try/catch`). Las reglas de **negocio** (unicidad de email/nombre, "último SUPERUSER", rol aún asignado) tampoco son validación de datos y siguen como checks de dominio en el servicio devolviendo `409`.
+**Frontera de alcance:** la regla cubre *validación de datos*. Los guards de **autenticación/identidad** no son validación de datos: en `AuthResource.logout`, la ausencia de identidad propagada es `401` (`RequestContext.headers().requireUserId()`) — sin identidad no hay a quién revocar; el *formato* malformado del UUID sí es dato y lo resuelve el intérprete de cabeceras (`RequestContext`) según su modo (`EAGER` ⇒ `400`). Las reglas de **negocio** (unicidad de email/nombre, "último SUPERUSER", rol aún asignado) tampoco son validación de datos y siguen como checks de dominio en el servicio devolviendo `409`.
+
+## Cabeceras internas: `RequestContext` (intérprete único)
+
+El API Gateway propaga la identidad ya autenticada como cabeceras internas `X-User-Id` (UUID del usuario) y `X-User-Roles` (UUIDs de rol separados por coma). **Ningún endpoint, filtro ni servicio lee esas cabeceras a mano** (`@HeaderParam("X-...")` / `getHeaderString("X-...")` están prohibidos): hay un único intérprete, `cl.duocuc.edutrack.ms.infrastructure.context.RequestContext`.
+
+Componentes del paquete `infrastructure.context`:
+
+| Tipo | Rol |
+|---|---|
+| `InternalHeader` (enum) | Única fuente de verdad de los nombres de cabecera (`X-User-Id`, `X-User-Roles`). Abstrae el string del cable. |
+| `RequestHeaders` (record) | Value object inmutable ya interpretado: `Optional<UUID> userId`, `List<UUID> roleIds` (nunca `null`). Helpers `hasIdentity()` y `requireUserId()` (⇒ `401` si ausente). |
+| `RequestContext` | Bean `@RequestScoped` proxyable. Interpreta y valida **una sola vez por request** en `@PostConstruct` y expone el record vía `headers()`. Es lo que se inyecta. |
+| `HeaderValidationMode` (enum) | `EAGER` / `WARN`. |
+
+Uso:
+
+```java
+@Inject RequestContext requestContext;
+...
+UUID uid       = requestContext.headers().requireUserId(); // 401 si no hay identidad
+List<UUID> rol = requestContext.headers().roleIds();        // [] si no viajan roles
+```
+
+**Por qué un holder `@RequestScoped` y no `@Produces @RequestScoped RequestHeaders`:** ArC prohíbe que un productor de bean *normal-scoped* devuelva un `record` (los records son `final`, no se pueden proxiar). El holder `RequestContext` sí es proxyable, conserva la semántica "se computa 1 vez por request" y es inyectable con resolución por-request incluso en singletons como `RequirePermissionFilter`. El record sigue siendo el value object inmutable que circula.
+
+**Reglas de interpretación:**
+
+1. Header presente y bien formado ⇒ valor tipado.
+2. Header **ausente** ⇒ valor vacío (`Optional.empty()` / lista vacía). **No** es fallo de validación; ausencia de identidad la decide el consumidor (p. ej. `requireUserId()` ⇒ `401`).
+3. Header **presente pero malformado** ⇒ según `edutrack.headers.validation.mode`:
+   - `EAGER` (default): aborta el request con `400 Bad Request`.
+   - `WARN`: loguea `WARN` y trata el valor como ausente; el request continúa.
+
+`RequirePermissionFilter` consume `RequestContext` (no parsea cabeceras): por eso un `X-User-Roles` malformado pasó de `403` a `400` en modo `EAGER` — la validación del *dato* cabecera ahora es responsabilidad del intérprete, antes que la autorización.
+
+| Propiedad | Default | Descripción |
+|---|---|---|
+| `edutrack.headers.validation.mode` | `EAGER` | `EAGER` ⇒ cabecera malformada = `400`; `WARN` ⇒ se loguea y se trata como ausente |

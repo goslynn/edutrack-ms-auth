@@ -44,7 +44,7 @@ public class UserResource {
     @JsonView(Views.Detailed.class)
     @RequirePermission(resource = AuthResourceId.USERS, value = Permission.WRITE)
     public Response create(
-        @Valid @ConvertGroup(from = Default.class, to = Validations.Create.class)
+        @Valid @ConvertGroup(to = Validations.Create.class)
         @JsonView(Views.Create.class) UserRequest req
     ) {
         User user = userService.create(req.email(), req.password(), req.displayName());
