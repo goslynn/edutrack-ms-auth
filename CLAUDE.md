@@ -173,4 +173,26 @@ Refresh  extends Base   // body de POST /auth/refresh
 - Body de `PUT` → parámetro anotado con `@JsonView(Views.Update.class)`
 - `AuthResource.login` usa `Views.Login` (req) / `Views.Base` (resp); `refresh` usa `Views.Refresh` (req) / `Views.Base` (resp)
 
-**Validaciones**: al unificar `Create`+`Update` en un único record no se puede usar `@NotBlank` condicionalmente entre vistas sin validation groups. Los checks críticos (campos requeridos en `Create`) se hacen defensivamente en el resource devolviendo `400`.
+## Validaciones de datos del request (regla dura)
+
+**TODA** validación de datos del request (body) pasa por la API de Bean Validation de Jakarta. **Prohibido** validar datos con sentencias `if` dentro de la implementación de un endpoint o en la capa de servicio (p. ej. `if (req.email() == null || req.email().isBlank()) throw 400`, o `if (flags < 0 || flags > 7) throw 422`). Las restricciones (`@NotBlank`, `@Email`, `@Size`, `@Min`, `@Max`, …) se declaran sobre los componentes del record y se disparan con `@Valid` en el parámetro del recurso; `ConstraintViolationException` ⇒ `400` lo mapea automáticamente la extensión `quarkus-hibernate-validator`.
+
+**Validación condicional por endpoint con un único record (validation groups):** como hay un solo `XxxRequest` compartido entre `Create`/`Update`/`Login`/etc., la presencia obligatoria de un campo varía por endpoint. Se modela con **grupos de Bean Validation** definidos en `model/dto/Validations.java` (paralelo a las vistas `@JsonView`):
+
+```
+Validations.OnCreate / OnLogin / OnRefresh     // marcadores de presencia, por endpoint
+Validations.Create  = @GroupSequence({Default, OnCreate})
+Validations.Login   = @GroupSequence({Default, OnLogin})
+Validations.Refresh = @GroupSequence({Default, OnRefresh})
+```
+
+Convención de anotación:
+
+- Restricciones de **formato** (`@Email`, `@Size`, `@Min`, `@Max`) → grupo `Default` (sin `groups`): siempre se evalúan y son null-safe (pasan cuando el campo no viaja en esa vista).
+- Restricciones de **presencia** (`@NotBlank`, `@NotNull`) → `groups = Validations.OnXxx.class`: solo se evalúan en su endpoint.
+- En el recurso, el body de un endpoint con presencia obligatoria se anota `@Valid @ConvertGroup(from = Default.class, to = Validations.Xxx.class)`. El `@GroupSequence` ejecuta primero `Default` (formato) y luego el grupo de presencia.
+- Los endpoints sin presencia obligatoria (`PUT`/`PATCH`) usan `@Valid` a secas (solo `Default`), por lo que los `@NotBlank` de `OnCreate` no se disparan y los campos omitidos son válidos.
+
+`PermissionRequest.flags` usa `@Min(0) @Max(7)` en `Default`; el `PUT` lo valida con `@Valid` simple (sin grupo).
+
+**Frontera de alcance:** la regla cubre *validación de datos*. Los guards de **autenticación/identidad** no son validación de datos: en `AuthResource.logout`, la ausencia del header `X-User-Id` es `401` (sin identidad propagada no hay a quién revocar) y se mantiene como check explícito; el *formato* del UUID sí es dato y lo resuelve JAX-RS tipando el parámetro como `UUID` (conversión fallida de `@HeaderParam` ⇒ `400`, sin `try/catch`). Las reglas de **negocio** (unicidad de email/nombre, "último SUPERUSER", rol aún asignado) tampoco son validación de datos y siguen como checks de dominio en el servicio devolviendo `409`.

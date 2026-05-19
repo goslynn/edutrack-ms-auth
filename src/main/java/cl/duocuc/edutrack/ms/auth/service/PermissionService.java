@@ -21,10 +21,6 @@ public class PermissionService {
 
     @Transactional
     public RolePermission upsert(UUID roleId, UUID resourceUuid, short flags) {
-        if (flags < 0 || flags > 7) {
-            throw new WebApplicationException(Response.status(422)
-                .entity(java.util.Map.of("error", "flags must be between 0 and 7")).build());
-        }
         Role role = (Role) Role.findByIdOptional(roleId)
             .orElseThrow(() -> new WebApplicationException(Response.Status.NOT_FOUND));
 

@@ -2,6 +2,7 @@ package cl.duocuc.edutrack.ms.auth.resource;
 
 import cl.duocuc.edutrack.ms.auth.model.dto.UserRequest;
 import cl.duocuc.edutrack.ms.auth.model.dto.UserResponse;
+import cl.duocuc.edutrack.ms.auth.model.dto.Validations;
 import cl.duocuc.edutrack.ms.auth.model.dto.Views;
 import cl.duocuc.edutrack.ms.auth.model.entity.User;
 import cl.duocuc.edutrack.ms.infrastructure.security.AuthResourceId;
@@ -12,6 +13,8 @@ import cl.duocuc.edutrack.ms.auth.service.UserService;
 import com.fasterxml.jackson.annotation.JsonView;
 import jakarta.inject.Inject;
 import jakarta.validation.Valid;
+import jakarta.validation.groups.ConvertGroup;
+import jakarta.validation.groups.Default;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
@@ -41,13 +44,9 @@ public class UserResource {
     @JsonView(Views.Detailed.class)
     @RequirePermission(resource = AuthResourceId.USERS, value = Permission.WRITE)
     public Response create(
-        @Valid @JsonView(Views.Create.class) UserRequest req
+        @Valid @ConvertGroup(from = Default.class, to = Validations.Create.class)
+        @JsonView(Views.Create.class) UserRequest req
     ) {
-        if (req.email() == null || req.email().isBlank()
-            || req.password() == null || req.password().isBlank()
-            || req.displayName() == null || req.displayName().isBlank()) {
-            throw new WebApplicationException(Response.Status.BAD_REQUEST);
-        }
         User user = userService.create(req.email(), req.password(), req.displayName());
         return Response.status(Response.Status.CREATED)
             .entity(userService.toResponse(user))

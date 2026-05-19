@@ -2,6 +2,7 @@ package cl.duocuc.edutrack.ms.auth.resource;
 
 import cl.duocuc.edutrack.ms.auth.model.dto.RoleRequest;
 import cl.duocuc.edutrack.ms.auth.model.dto.RoleResponse;
+import cl.duocuc.edutrack.ms.auth.model.dto.Validations;
 import cl.duocuc.edutrack.ms.auth.model.dto.Views;
 import cl.duocuc.edutrack.ms.infrastructure.security.AuthResourceId;
 import cl.duocuc.edutrack.ms.infrastructure.security.Permission;
@@ -10,6 +11,8 @@ import cl.duocuc.edutrack.ms.auth.service.RoleService;
 import com.fasterxml.jackson.annotation.JsonView;
 import jakarta.inject.Inject;
 import jakarta.validation.Valid;
+import jakarta.validation.groups.ConvertGroup;
+import jakarta.validation.groups.Default;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
@@ -36,11 +39,9 @@ public class RoleResource {
     @JsonView(Views.Detailed.class)
     @RequirePermission(resource = AuthResourceId.ROLES, value = Permission.WRITE)
     public Response create(
-        @Valid @JsonView(Views.Create.class) RoleRequest req
+        @Valid @ConvertGroup(from = Default.class, to = Validations.Create.class)
+        @JsonView(Views.Create.class) RoleRequest req
     ) {
-        if (req.name() == null || req.name().isBlank()) {
-            throw new WebApplicationException(Response.Status.BAD_REQUEST);
-        }
         return Response.status(Response.Status.CREATED)
             .entity(roleService.toResponse(roleService.create(req.name(), req.description())))
             .build();
