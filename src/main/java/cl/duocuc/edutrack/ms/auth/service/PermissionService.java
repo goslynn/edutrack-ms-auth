@@ -55,7 +55,9 @@ public class PermissionService {
     }
 
     public short computeEffectiveFlags(List<UUID> roleIds, UUID resourceUuid) {
-        return permissionRepository.computeEffectiveFlags(roleIds, resourceUuid);
+        return (short) permissionRepository.findByRolesAndResource(roleIds, resourceUuid)
+                .stream().mapToInt(p -> p.flags)
+                .reduce(0, (a, b) -> a | b);
     }
 
     public PermissionResponse toResponse(RolePermission perm) {

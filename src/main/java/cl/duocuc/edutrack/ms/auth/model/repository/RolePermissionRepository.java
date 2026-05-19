@@ -4,9 +4,7 @@ import cl.duocuc.edutrack.ms.auth.model.entity.RolePermission;
 import io.quarkus.hibernate.orm.panache.PanacheRepositoryBase;
 import jakarta.enterprise.context.ApplicationScoped;
 
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 
 @ApplicationScoped
 public class RolePermissionRepository implements PanacheRepositoryBase<RolePermission, UUID> {
@@ -20,10 +18,17 @@ public class RolePermissionRepository implements PanacheRepositoryBase<RolePermi
         return list("role.id", roleId);
     }
 
+    public List<RolePermission> findByRolesAndResource(Collection<UUID> roleIds, UUID resourceId) {
+        if (roleIds == null || roleIds.isEmpty()) return Collections.emptyList();
+        return list("role.id in ?1 and resourceUuid = ?2", roleIds, resourceId);
+
+    }
+
     /**
      * Computes the effective permission flags for a resource given a set of roles.
      * Effective flags = bitwise OR of each role's flags (BE-AUTH-005).
      */
+    @Deprecated
     public short computeEffectiveFlags(List<UUID> roleIds, UUID resourceUuid) {
         if (roleIds == null || roleIds.isEmpty()) return 0;
         List<RolePermission> perms =
