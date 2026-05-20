@@ -1,4 +1,4 @@
-package cl.duocuc.edutrack.ms.auth.model.entity;
+package cl.duocuc.edutrack.ms.infrastructure.persistence;
 
 import io.quarkus.hibernate.orm.panache.PanacheEntityBase;
 import jakarta.persistence.Column;
@@ -23,7 +23,7 @@ public abstract class CreatableEntity extends PanacheEntityBase {
     public Instant createdAt;
 
     @PrePersist
-    void onCreate() {
+    protected void onCreate() {
         createdAt = Instant.now();
     }
 }

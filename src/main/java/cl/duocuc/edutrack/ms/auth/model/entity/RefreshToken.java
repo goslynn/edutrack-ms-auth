@@ -1,5 +1,6 @@
 package cl.duocuc.edutrack.ms.auth.model.entity;
 
+import cl.duocuc.edutrack.ms.infrastructure.persistence.CreatableEntity;
 import jakarta.persistence.*;
 
 import java.time.Instant;
