@@ -4,7 +4,8 @@ import cl.duocuc.edutrack.ms.auth.model.dto.PermissionResponse;
 import cl.duocuc.edutrack.ms.auth.model.entity.Role;
 import cl.duocuc.edutrack.ms.auth.model.entity.RolePermission;
 import cl.duocuc.edutrack.ms.auth.model.repository.RolePermissionRepository;
-import cl.duocuc.edutrack.ms.infrastructure.security.AuthResourceId;
+import cl.duocuc.edutrack.ms.infrastructure.security.PermissionEvaluator;
+import cl.duocuc.edutrack.ms.infrastructure.security.ResourceIds;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
@@ -15,7 +16,7 @@ import java.util.List;
 import java.util.UUID;
 
 @ApplicationScoped
-public class PermissionService {
+public class PermissionService implements PermissionEvaluator {
 
     @Inject
     RolePermissionRepository permissionRepository;
@@ -59,21 +60,23 @@ public class PermissionService {
 
     /**
      * Flags efectivos de un conjunto de roles sobre un recurso, incluyendo el
-     * comodín {@link AuthResourceId#ALL} (un grant sobre ALL — p. ej. SUPERUSER —
-     * cubre cualquier recurso). Es el mismo cálculo que aplica
+     * comodín {@link ResourceIds#ALL} (un grant sobre {@code ALL} — p. ej.
+     * SUPERUSER — cubre cualquier recurso). Es el mismo cálculo que aplica
      * {@code RequirePermissionFilter}.
      */
     public short effectiveFlags(List<UUID> roleIds, UUID resourceUuid) {
         short concrete = computeEffectiveFlags(roleIds, resourceUuid);
-        short wildcard = computeEffectiveFlags(roleIds, AuthResourceId.ALL.uuid);
+        short wildcard = computeEffectiveFlags(roleIds, ResourceIds.ALL);
         return (short) (concrete | wildcard);
     }
 
     /**
      * ¿Los roles satisfacen el bit requerido sobre el recurso? Fuente de verdad
      * única del algoritmo que materializa {@code @RequirePermission}: lo usan
-     * tanto el filtro como el endpoint público de verificación.
+     * tanto el filtro (vía {@link PermissionEvaluator}) como el endpoint público
+     * de verificación.
      */
+    @Override
     public boolean hasPermission(List<UUID> roleIds, UUID resourceUuid, short requiredBits) {
         return (effectiveFlags(roleIds, resourceUuid) & requiredBits) == requiredBits;
     }

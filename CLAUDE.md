@@ -25,6 +25,22 @@ El API Gateway valida el JWT y propaga `sub` (UUID del usuario) y `roles[]` como
 ./mvnw package              # build JAR
 ```
 
+## Código compartido (`cl.duocuc.edutrack.ms.infrastructure`)
+
+El paquete `infrastructure` aloja **código transversal** a todos los microservicios — sin reglas de negocio ni nombres de Auth. En un futuro cercano se extraerá como un artefacto de librería interna (`edutrack-commons`) consumido por dependencia; hasta entonces se duplica en cada MS con la misma forma y nombres. Ver `infrastructure/package-info.java` para el contrato detallado de cada subpaquete.
+
+**Resumen de subpaquetes:**
+
+| Subpaquete | Contenido |
+|---|---|
+| `infrastructure.security` | `@RequirePermission(resource = <UUID-string>, value = …)`, enum `Permission`, `ResourceIds` (wildcard `ALL`), contrato `PermissionEvaluator`, `RequirePermissionFilter`. **No** conoce los recursos de Auth — esos viven en `auth.security.AuthResourceId`. |
+| `infrastructure.context` | Intérprete único de cabeceras del Gateway: `InternalHeader`, `RequestHeaders`, `RequestContext`, `HeaderValidationMode`. |
+| `infrastructure.exception` | `GlobalExceptionMappers`, envelope `ErrorResponse`, jerarquía `DomainException` + sugar (`ConflictException`/`NotFoundException`/`ForbiddenException`). |
+| `infrastructure.jackson` | Interfaz `Views` (vistas estándar) + `JacksonCustomConfig` que la fija como vista por defecto. Las vistas propias de auth (`Login`, `Refresh`) viven en `auth.model.dto.AuthViews`. |
+| `infrastructure.validation` | Interfaz `Validations` con `OnCreate` + secuencia `Create`. Los grupos propios de auth (`OnLogin`, `OnRefresh`, `Login`, `Refresh`) viven en `auth.model.dto.AuthValidations`. |
+
+**Regla dura:** ningún archivo bajo `infrastructure.*` puede importar paquetes `ms.auth.*` (ni los de otros MS). Los puntos de extensión específicos del dominio se exponen como contratos CDI (`PermissionEvaluator` es el primer ejemplo) y cada MS aporta su implementación.
+
 ## Modelo de datos (`cl.duocuc.edutrack.ms.auth.model`)
 
 Las PKs son `UUID` con `@GeneratedValue(strategy = GenerationType.UUID)` y todas las asociaciones usan `FetchType.LAZY`. Los timestamps (`createdAt`, `updatedAt`) se gestionan via `@PrePersist` / `@PreUpdate` con `Instant`, pero **no se duplican en cada entidad**: se heredan de superclases `@MappedSuperclass` (ver "Herencia de entidades" más abajo).
@@ -136,9 +152,10 @@ No usar `.env` ni archivos de secrets versionados. Los defaults en `application.
 
 Los DTOs están en `cl.duocuc.edutrack.ms.auth.model.dto`. Hay exactamente **un Request y un Response por entidad/recurso**; la diferencia entre los campos que viajan en cada endpoint se modela con `@JsonView` sobre los componentes del record.
 
-**Jerarquía de vistas** (`Views.java`):
+**Jerarquía de vistas** — el núcleo transversal vive en `cl.duocuc.edutrack.ms.infrastructure.jackson.Views` (compartido entre todos los MS) y este servicio agrega las vistas propias del dominio en `cl.duocuc.edutrack.ms.auth.model.dto.AuthViews`:
 
 ```
+// infrastructure.jackson.Views (compartido)
 Base                    // campos siempre visibles
 Extra                   // campos opt-in para listados/admin
 Detailed extends Base   // GET /{id}, respuestas tras POST/PUT
@@ -148,8 +165,10 @@ Patch    extends Base, Extra   // body de PATCH
 List     extends Base, Extra   // GET colecciones
 Admin    extends Base, Extra   // vistas con campos sensibles/auditoría
 Internal                // serialización service-to-service
-Login    extends Base   // body de POST /auth/login
-Refresh  extends Base   // body de POST /auth/refresh
+
+// auth.model.dto.AuthViews (específico del MS)
+Login    extends Views.Base   // body de POST /auth/login
+Refresh  extends Views.Base   // body de POST /auth/refresh
 ```
 
 **DTOs actuales** (9 archivos):
@@ -162,7 +181,7 @@ Refresh  extends Base   // body de POST /auth/refresh
 | `RoleResponse` | `id,name` → `Base`; `description` → `Base/Extra`; timestamps → `Detailed/Admin` |
 | `PermissionRequest` | `flags` → `Create/Update/Patch` |
 | `PermissionResponse` | base + `flagsLabel` (`Base/Extra`); helper estático `toLabel(short)` |
-| `AuthRequest` | `email,password` → `Login`; `refreshToken` → `Refresh` |
+| `AuthRequest` | `email,password` → `AuthViews.Login`; `refreshToken` → `AuthViews.Refresh` |
 | `AuthResponse` | `accessToken,refreshToken,tokenType,expiresIn` → `Base` |
 | `AccessResponse` | `allowed,resourceUuid,required,effectiveFlags,effectiveLabel` → `Base` (solo response; entrada por query params) |
 
@@ -172,11 +191,11 @@ Refresh  extends Base   // body de POST /auth/refresh
 - `GET /{id}` y respuestas tras `POST`/`PUT` → `@JsonView(Views.Detailed.class)`
 - Body de `POST` → parámetro anotado con `@JsonView(Views.Create.class)`
 - Body de `PUT` → parámetro anotado con `@JsonView(Views.Update.class)`
-- `AuthResource.login` usa `Views.Login` en el req; el resp es `Views.Base` por **default global** (ver siguiente sub-sección), por lo que no se anota.
+- `AuthResource.login` usa `AuthViews.Login` en el req; el resp es `Views.Base` por **default global** (ver siguiente sub-sección), por lo que no se anota.
 
 ### `Views.Base` como vista por defecto
 
-La vista por defecto de Jackson se configura globalmente en `cl.duocuc.edutrack.ms.infrastructure.jackson.JacksonViewCustomizer` (`ObjectMapperCustomizer` `@Singleton`):
+La vista por defecto de Jackson se configura globalmente en `cl.duocuc.edutrack.ms.infrastructure.jackson.JacksonCustomConfig` (`ObjectMapperCustomizer` `@Singleton`):
 
 ```java
 mapper.disable(MapperFeature.DEFAULT_VIEW_INCLUSION);
@@ -209,13 +228,17 @@ Cuando no hay I/O, el servicio puede omitirse del flujo y el recurso llamar al f
 
 **TODA** validación de datos del request (body) pasa por la API de Bean Validation de Jakarta. **Prohibido** validar datos con sentencias `if` dentro de la implementación de un endpoint o en la capa de servicio (p. ej. `if (req.email() == null || req.email().isBlank()) throw 400`, o `if (flags < 0 || flags > 7) throw 422`). Las restricciones (`@NotBlank`, `@Email`, `@Size`, `@Min`, `@Max`, …) se declaran sobre los componentes del record y se disparan con `@Valid` en el parámetro del recurso; `ConstraintViolationException` ⇒ `400` lo mapea automáticamente la extensión `quarkus-hibernate-validator`.
 
-**Validación condicional por endpoint con un único record (validation groups):** como hay un solo `XxxRequest` compartido entre `Create`/`Update`/`Login`/etc., la presencia obligatoria de un campo varía por endpoint. Se modela con **grupos de Bean Validation** definidos en `model/dto/Validations.java` (paralelo a las vistas `@JsonView`):
+**Validación condicional por endpoint con un único record (validation groups):** como hay un solo `XxxRequest` compartido entre `Create`/`Update`/`Login`/etc., la presencia obligatoria de un campo varía por endpoint. Se modela con **grupos de Bean Validation** (paralelo a las vistas `@JsonView`). El núcleo transversal vive en `cl.duocuc.edutrack.ms.infrastructure.validation.Validations` (compartido); los grupos propios del MS viven en `cl.duocuc.edutrack.ms.auth.model.dto.AuthValidations`:
 
 ```
-Validations.OnCreate / OnLogin / OnRefresh     // marcadores de presencia, por endpoint
-Validations.Create  = @GroupSequence({Default, OnCreate})
-Validations.Login   = @GroupSequence({Default, OnLogin})
-Validations.Refresh = @GroupSequence({Default, OnRefresh})
+// infrastructure.validation.Validations (compartido)
+Validations.OnCreate                            // marcador de presencia para POST de creación
+Validations.Create   = @GroupSequence({Default, OnCreate})
+
+// auth.model.dto.AuthValidations (específico del MS)
+AuthValidations.OnLogin / OnRefresh             // marcadores propios de auth
+AuthValidations.Login    = @GroupSequence({Default, OnLogin})
+AuthValidations.Refresh  = @GroupSequence({Default, OnRefresh})
 ```
 
 Convención de anotación:
@@ -231,7 +254,7 @@ Convención de anotación:
 
 ## Manejo de errores: `GlobalExceptionMappers` + `DomainException`
 
-Todo error que escape de un recurso sale en el mismo envelope JSON, emitido por `cl.duocuc.edutrack.ms.infrastructure.error.GlobalExceptionMappers` (un único bean `@ApplicationScoped` con varios `@ServerExceptionMapper` por tipo). El bean resuelve el más específico primero:
+Todo error que escape de un recurso sale en el mismo envelope JSON, emitido por `cl.duocuc.edutrack.ms.infrastructure.exception.GlobalExceptionMappers` (un único bean `@ApplicationScoped` con varios `@ServerExceptionMapper` por tipo). El bean resuelve el más específico primero:
 
 | Tipo de excepción | Status | `code` |
 |---|---|---|
@@ -332,12 +355,14 @@ List<UUID> rol = requestContext.headers().roleIds();        // [] si no viajan r
 
 ## Autorización: algoritmo único y endpoint público de verificación
 
-El algoritmo de decisión Unix-style **vive en un solo lugar**: `PermissionService`.
+El algoritmo de decisión Unix-style **vive en un solo lugar**: `PermissionService`, que implementa el contrato compartido `cl.duocuc.edutrack.ms.infrastructure.security.PermissionEvaluator`.
 
-- `effectiveFlags(roleIds, resourceUuid)` → flags efectivos OR-eados, **incluyendo el comodín `AuthResourceId.ALL`** (un grant sobre ALL — p. ej. SUPERUSER — cubre cualquier recurso presente/futuro).
-- `hasPermission(roleIds, resourceUuid, requiredBits)` → `(effectiveFlags & required) == required`.
+- `effectiveFlags(roleIds, resourceUuid)` → flags efectivos OR-eados, **incluyendo el comodín `ResourceIds.ALL`** (un grant sobre `ALL` — p. ej. SUPERUSER — cubre cualquier recurso presente/futuro). `ResourceIds.ALL` vive en `infrastructure.security` porque el wildcard es transversal a todos los MS.
+- `hasPermission(roleIds, resourceUuid, requiredBits)` → `(effectiveFlags & required) == required`. Es el método del contrato `PermissionEvaluator`.
 
-Tanto `RequirePermissionFilter` (anotación `@RequirePermission`, decisión interna ⇒ `403`) como el endpoint público delegan en estos métodos: **no se duplica la lógica de bits/comodín**.
+Los UUIDs concretos de los recursos de este servicio viven en `cl.duocuc.edutrack.ms.auth.security.AuthResourceId` (enum con campo `uuid` para uso en código + interfaz anidada `AuthResourceId.Uuid` con los mismos UUIDs como `String` para usarlos como valor de anotación `@RequirePermission(resource = AuthResourceId.Uuid.USERS, ...)`).
+
+Tanto `RequirePermissionFilter` (anotación `@RequirePermission`, decisión interna ⇒ `403`, inyecta `PermissionEvaluator`) como el endpoint público delegan en estos métodos: **no se duplica la lógica de bits/comodín**.
 
 **`GET /auth/access`** — expone ese mismo algoritmo hacia afuera para que otros MS verifiquen el acceso del usuario propagado por el Gateway (toma sus roles de `RequestContext`, no de un `roleId` de path como `/effective`).
 

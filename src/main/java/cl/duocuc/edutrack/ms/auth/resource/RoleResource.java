@@ -2,9 +2,9 @@ package cl.duocuc.edutrack.ms.auth.resource;
 
 import cl.duocuc.edutrack.ms.auth.model.dto.RoleRequest;
 import cl.duocuc.edutrack.ms.auth.model.dto.RoleResponse;
-import cl.duocuc.edutrack.ms.auth.model.dto.Validations;
-import cl.duocuc.edutrack.ms.auth.model.dto.Views;
-import cl.duocuc.edutrack.ms.infrastructure.security.AuthResourceId;
+import cl.duocuc.edutrack.ms.infrastructure.validation.Validations;
+import cl.duocuc.edutrack.ms.infrastructure.jackson.Views;
+import cl.duocuc.edutrack.ms.auth.security.AuthResourceId;
 import cl.duocuc.edutrack.ms.infrastructure.security.Permission;
 import cl.duocuc.edutrack.ms.infrastructure.security.RequirePermission;
 import cl.duocuc.edutrack.ms.auth.service.RoleService;
@@ -30,14 +30,14 @@ public class RoleResource {
 
     @GET
     @JsonView(Views.List.class)
-    @RequirePermission(resource = AuthResourceId.ROLES, value = Permission.READ)
+    @RequirePermission(resource = AuthResourceId.Uuid.ROLES, value = Permission.READ)
     public List<RoleResponse> list() {
         return roleService.listAll().stream().map(roleService::toResponse).toList();
     }
 
     @POST
     @JsonView(Views.Detailed.class)
-    @RequirePermission(resource = AuthResourceId.ROLES, value = Permission.WRITE)
+    @RequirePermission(resource = AuthResourceId.Uuid.ROLES, value = Permission.WRITE)
     public Response create(
         @Valid @ConvertGroup(from = Default.class, to = Validations.Create.class)
         @JsonView(Views.Create.class) RoleRequest req
@@ -50,7 +50,7 @@ public class RoleResource {
     @GET
     @Path("/{id}")
     @JsonView(Views.Detailed.class)
-    @RequirePermission(resource = AuthResourceId.ROLES, value = Permission.READ)
+    @RequirePermission(resource = AuthResourceId.Uuid.ROLES, value = Permission.READ)
     public RoleResponse get(@PathParam("id") UUID id) {
         return roleService.toResponse(roleService.findById(id));
     }
@@ -58,7 +58,7 @@ public class RoleResource {
     @PUT
     @Path("/{id}")
     @JsonView(Views.Detailed.class)
-    @RequirePermission(resource = AuthResourceId.ROLES, value = Permission.WRITE)
+    @RequirePermission(resource = AuthResourceId.Uuid.ROLES, value = Permission.WRITE)
     public RoleResponse update(
         @PathParam("id") UUID id,
         @Valid @JsonView(Views.Update.class) RoleRequest req
@@ -68,7 +68,7 @@ public class RoleResource {
 
     @DELETE
     @Path("/{id}")
-    @RequirePermission(resource = AuthResourceId.ROLES, value = Permission.WRITE)
+    @RequirePermission(resource = AuthResourceId.Uuid.ROLES, value = Permission.WRITE)
     public Response delete(@PathParam("id") UUID id) {
         roleService.delete(id);
         return Response.noContent().build();

@@ -2,9 +2,9 @@ package cl.duocuc.edutrack.ms.auth.resource;
 
 import cl.duocuc.edutrack.ms.auth.model.dto.PermissionRequest;
 import cl.duocuc.edutrack.ms.auth.model.dto.PermissionResponse;
-import cl.duocuc.edutrack.ms.auth.model.dto.Views;
+import cl.duocuc.edutrack.ms.infrastructure.jackson.Views;
 import cl.duocuc.edutrack.ms.auth.service.PermissionService;
-import cl.duocuc.edutrack.ms.infrastructure.security.AuthResourceId;
+import cl.duocuc.edutrack.ms.auth.security.AuthResourceId;
 import cl.duocuc.edutrack.ms.infrastructure.security.Permission;
 import cl.duocuc.edutrack.ms.infrastructure.security.RequirePermission;
 import com.fasterxml.jackson.annotation.JsonView;
@@ -27,7 +27,7 @@ public class RolePermissionResource {
 
     @GET
     @JsonView(Views.List.class)
-    @RequirePermission(resource = AuthResourceId.PERMISSIONS, value = Permission.READ)
+    @RequirePermission(resource = AuthResourceId.Uuid.PERMISSIONS, value = Permission.READ)
     public List<PermissionResponse> list(
         @PathParam("roleId") UUID roleId
     ) {
@@ -39,7 +39,7 @@ public class RolePermissionResource {
     @PUT
     @Path("/{resourceUuid}")
     @JsonView(Views.Detailed.class)
-    @RequirePermission(resource = AuthResourceId.PERMISSIONS, value = Permission.WRITE)
+    @RequirePermission(resource = AuthResourceId.Uuid.PERMISSIONS, value = Permission.WRITE)
     public PermissionResponse upsert(
         @PathParam("roleId") UUID roleId,
         @PathParam("resourceUuid") UUID resourceUuid,
@@ -50,7 +50,7 @@ public class RolePermissionResource {
 
     @DELETE
     @Path("/{resourceUuid}")
-    @RequirePermission(resource = AuthResourceId.PERMISSIONS, value = Permission.WRITE)
+    @RequirePermission(resource = AuthResourceId.Uuid.PERMISSIONS, value = Permission.WRITE)
     public Response delete(
         @PathParam("roleId") UUID roleId,
         @PathParam("resourceUuid") UUID resourceUuid
@@ -66,7 +66,7 @@ public class RolePermissionResource {
     @GET
     @Path("/effective")
     @JsonView(Views.Detailed.class)
-    @RequirePermission(resource = AuthResourceId.PERMISSIONS_EFFECTIVE, value = Permission.READ)
+    @RequirePermission(resource = AuthResourceId.Uuid.PERMISSIONS_EFFECTIVE, value = Permission.READ)
     public PermissionResponse effectiveFlags(
         @PathParam("roleId") UUID roleId,
         @QueryParam("resourceUuid") UUID resourceUuid

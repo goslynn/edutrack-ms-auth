@@ -1,4 +1,4 @@
-package cl.duocuc.edutrack.ms.infrastructure.error;
+package cl.duocuc.edutrack.ms.infrastructure.exception;
 
 /** Sugar para {@code DomainException} con status {@code 403 Forbidden}. */
 public class ForbiddenException extends DomainException {

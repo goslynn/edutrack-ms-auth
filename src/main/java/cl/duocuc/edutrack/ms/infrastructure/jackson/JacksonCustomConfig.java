@@ -1,6 +1,5 @@
 package cl.duocuc.edutrack.ms.infrastructure.jackson;
 
-import cl.duocuc.edutrack.ms.auth.model.dto.Views;
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.quarkus.jackson.ObjectMapperCustomizer;
@@ -23,7 +22,7 @@ import jakarta.inject.Singleton;
  * {@code @JsonView}, el efecto es estricto y predecible.</p>
  */
 @Singleton
-public class JacksonViewCustomizer implements ObjectMapperCustomizer {
+public class JacksonCustomConfig implements ObjectMapperCustomizer {
 
     @Override
     public void customize(ObjectMapper mapper) {

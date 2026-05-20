@@ -2,8 +2,8 @@ package cl.duocuc.edutrack.ms.auth.resource;
 
 import cl.duocuc.edutrack.ms.auth.model.dto.AuthRequest;
 import cl.duocuc.edutrack.ms.auth.model.dto.AuthResponse;
-import cl.duocuc.edutrack.ms.auth.model.dto.Validations;
-import cl.duocuc.edutrack.ms.auth.model.dto.Views;
+import cl.duocuc.edutrack.ms.auth.model.dto.AuthValidations;
+import cl.duocuc.edutrack.ms.auth.model.dto.AuthViews;
 import cl.duocuc.edutrack.ms.auth.service.AuthService;
 import cl.duocuc.edutrack.ms.infrastructure.context.RequestContext;
 import com.fasterxml.jackson.annotation.JsonView;
@@ -28,8 +28,8 @@ public class AuthResource {
     @POST
     @Path("/login")
     public AuthResponse login(
-        @Valid @ConvertGroup(to = Validations.Login.class)
-        @JsonView(Views.Login.class) AuthRequest req
+        @Valid @ConvertGroup(to = AuthValidations.Login.class)
+        @JsonView(AuthViews.Login.class) AuthRequest req
     ) {
         return authService.login(req.email(), req.password());
     }
@@ -37,8 +37,8 @@ public class AuthResource {
     @POST
     @Path("/refresh")
     public AuthResponse refresh(
-        @Valid @ConvertGroup(to = Validations.Refresh.class)
-        @JsonView(Views.Refresh.class) AuthRequest req
+        @Valid @ConvertGroup(to = AuthValidations.Refresh.class)
+        @JsonView(AuthViews.Refresh.class) AuthRequest req
     ) {
         return authService.refresh(req.refreshToken());
     }

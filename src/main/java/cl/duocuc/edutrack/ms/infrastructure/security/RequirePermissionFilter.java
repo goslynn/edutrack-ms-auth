@@ -1,6 +1,5 @@
 package cl.duocuc.edutrack.ms.infrastructure.security;
 
-import cl.duocuc.edutrack.ms.auth.service.PermissionService;
 import cl.duocuc.edutrack.ms.infrastructure.context.RequestContext;
 import cl.duocuc.edutrack.ms.infrastructure.context.RequestHeaders;
 import jakarta.annotation.Priority;
@@ -15,19 +14,24 @@ import jakarta.ws.rs.core.UriInfo;
 import jakarta.ws.rs.ext.Provider;
 
 import java.lang.reflect.Method;
+import java.util.UUID;
 
 /**
  * Filtro de request que materializa {@link RequirePermission}. Se ejecuta solo
  * sobre endpoints anotados (name binding), antes de la deserialización del body
  * y de bean-validation.
+ *
+ * <p>El cálculo de flags efectivos (incluido el wildcard {@link ResourceIds#ALL})
+ * se delega en una implementación CDI de {@link PermissionEvaluator}: el filtro
+ * no conoce el dominio del MS que lo monta.</p>
  */
 @Provider
-@RequirePermission(resource = AuthResourceId.USERS, value = Permission.READ)
+@RequirePermission(resource = ResourceIds.ALL_UUID, value = Permission.READ)
 @Priority(Priorities.AUTHORIZATION)
 public class RequirePermissionFilter implements ContainerRequestFilter {
 
     @Inject
-    PermissionService permissionService;
+    PermissionEvaluator permissionEvaluator;
 
     @Inject
     RequestContext requestContext;
@@ -59,8 +63,8 @@ public class RequirePermissionFilter implements ContainerRequestFilter {
             }
         }
 
-        // Mismo algoritmo expuesto por AccessResource: delegado a PermissionService.
-        if (!permissionService.hasPermission(headers.roleIds(), ann.resource().uuid, ann.value().bit)) {
+        UUID resourceUuid = UUID.fromString(ann.resource());
+        if (!permissionEvaluator.hasPermission(headers.roleIds(), resourceUuid, ann.value().bit)) {
             abort(ctx);
         }
     }

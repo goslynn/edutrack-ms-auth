@@ -1,6 +1,6 @@
-package cl.duocuc.edutrack.ms.infrastructure.error;
+package cl.duocuc.edutrack.ms.infrastructure.exception;
 
-import cl.duocuc.edutrack.ms.auth.model.dto.Views;
+import cl.duocuc.edutrack.ms.infrastructure.jackson.Views;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonView;
 

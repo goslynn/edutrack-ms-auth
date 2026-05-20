@@ -1,4 +1,4 @@
-package cl.duocuc.edutrack.ms.infrastructure.error;
+package cl.duocuc.edutrack.ms.infrastructure.exception;
 
 /** Sugar para {@code DomainException} con status {@code 404 Not Found}. */
 public class NotFoundException extends DomainException {

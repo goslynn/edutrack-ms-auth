@@ -1,6 +1,7 @@
 package cl.duocuc.edutrack.ms.auth.model.dto;
 
 import cl.duocuc.edutrack.ms.auth.model.entity.User;
+import cl.duocuc.edutrack.ms.infrastructure.jackson.Views;
 import com.fasterxml.jackson.annotation.JsonView;
 
 import java.time.Instant;

@@ -5,12 +5,12 @@ import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 
 public record AuthRequest(
-    @JsonView(Views.Login.class)
-    @Email @NotBlank(groups = Validations.OnLogin.class) String email,
+    @JsonView(AuthViews.Login.class)
+    @Email @NotBlank(groups = AuthValidations.OnLogin.class) String email,
 
-    @JsonView(Views.Login.class)
-    @NotBlank(groups = Validations.OnLogin.class) String password,
+    @JsonView(AuthViews.Login.class)
+    @NotBlank(groups = AuthValidations.OnLogin.class) String password,
 
-    @JsonView(Views.Refresh.class)
-    @NotBlank(groups = Validations.OnRefresh.class) String refreshToken
+    @JsonView(AuthViews.Refresh.class)
+    @NotBlank(groups = AuthValidations.OnRefresh.class) String refreshToken
 ) {}

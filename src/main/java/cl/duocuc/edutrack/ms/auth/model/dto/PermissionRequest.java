@@ -1,5 +1,6 @@
 package cl.duocuc.edutrack.ms.auth.model.dto;
 
+import cl.duocuc.edutrack.ms.infrastructure.jackson.Views;
 import com.fasterxml.jackson.annotation.JsonView;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;

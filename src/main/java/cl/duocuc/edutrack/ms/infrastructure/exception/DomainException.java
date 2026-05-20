@@ -1,4 +1,4 @@
-package cl.duocuc.edutrack.ms.infrastructure.error;
+package cl.duocuc.edutrack.ms.infrastructure.exception;
 
 import jakarta.ws.rs.core.Response;
 

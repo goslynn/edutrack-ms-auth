@@ -1,6 +1,6 @@
 package cl.duocuc.edutrack.ms.auth.endpoint;
 
-import cl.duocuc.edutrack.ms.infrastructure.security.AuthResourceId;
+import cl.duocuc.edutrack.ms.auth.security.AuthResourceId;
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.http.ContentType;
 import org.junit.jupiter.api.Test;
