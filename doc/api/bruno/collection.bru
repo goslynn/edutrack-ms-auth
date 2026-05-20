@@ -1,6 +1,6 @@
 vars:pre-request {
   baseUrl: {{protocol}}://{{domain}}:{{port}}
-  userRoles: SUPERUSER,ADMIN
+  userRoles:
   userId:
   resourceUuid:
 }
@@ -13,8 +13,9 @@ docs {
   - **Entorno** (`environments/*.bru`): solo `protocol`, `domain`, `port`.
     Selecciona Local o Production.
   - **Colección** (este archivo): `baseUrl` se compone de las 3 variables de
-    entorno; `userRoles` (header `X-User-Roles`); `userId` y `resourceUuid`
-    se usan como segmento padre en rutas de subrecurso
+    entorno; `userRoles` (header `X-User-Roles`, lista de UUIDs de rol
+    separados por coma — no nombres); `userId` y `resourceUuid` se usan como
+    segmento padre en rutas de subrecurso
     (`/auth/users/{{userId}}/...`, `/auth/roles/{{roleId}}/permissions/...`).
   - **Tokens** (`accessToken`, `refreshToken`) y `roleId`: variables de
     runtime, las setean los scripts de Login / Refresh / Create role.

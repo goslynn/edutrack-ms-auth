@@ -44,6 +44,8 @@ servers:
 tags:
   - name: auth
     description: Login, refresh y logout
+  - name: access
+    description: Verificación de permisos del usuario propagado por el Gateway
   - name: jwks
     description: Llaves públicas para verificación de JWT
   - name: users
@@ -124,6 +126,58 @@ paths:
         '204': { description: Sesiones revocadas }
         '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
+  /auth/access:
+    get:
+      tags: [access]
+      summary: Verificar si el usuario tiene un permiso sobre un recurso
+      description: |
+        Aplica el mismo algoritmo Unix-style que `@RequirePermission` (flags
+        efectivos OR comodín `ALL`) sobre la identidad propagada por el
+        Gateway (`X-User-Roles`). Endpoint **público tras el Gateway**: sin
+        identidad propagada no hay grants que sumar ⇒ la respuesta es `"0"` /
+        `allowed=false`, no `403`.
+
+        Negociación de contenido:
+        - `text/plain` (default, `qs=1.0`): cuerpo `"1"` / `"0"`.
+        - `application/json` (`qs=0.9`, solo si se pide explícito):
+          `AccessResponse` con flags efectivos y etiqueta `rwx`.
+      parameters:
+        - $ref: '#/components/parameters/XUserRoles'
+        - name: resourceUuid
+          in: query
+          required: true
+          description: UUID del recurso a verificar (opaco para Auth).
+          schema: { type: string, format: uuid }
+        - name: permission
+          in: query
+          required: false
+          description: Permiso solicitado (default `READ`).
+          schema:
+            type: string
+            enum: [READ, WRITE, EXECUTE]
+            default: READ
+      responses:
+        '200':
+          description: Resultado de la verificación
+          content:
+            text/plain:
+              schema: { type: string, enum: ['0', '1'] }
+              examples:
+                allowed:   { value: '1' }
+                denied:    { value: '0' }
+            application/json:
+              schema: { $ref: '#/components/schemas/AccessResponse' }
+              examples:
+                allowed:
+                  value:
+                    allowed: true
+                    resourceUuid: 00000000-0000-0000-0000-00000000a001
+                    required: READ
+                    effectiveFlags: 7
+                    effectiveLabel: rwx
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
   /.well-known/jwks.json:
     get:
       tags: [jwks]
@@ -503,9 +557,13 @@ components:
       in: header
       required: true
       description: |
-        Lista de roles del usuario separados por comas. Ej: `SUPERUSER,ADMIN`.
+        Lista de UUIDs de rol del usuario, separados por comas. El claim
+        `roles[]` del JWT viaja como UUIDs (no nombres). El intérprete
+        (`RequestContext`) valida formato según `edutrack.headers.validation.mode`:
+        `EAGER` (default) ⇒ malformado responde `400`; `WARN` ⇒ se loguea y se
+        trata como ausente.
       schema: { type: string }
-      example: SUPERUSER,ADMIN
+      example: 11111111-1111-1111-1111-111111111111,22222222-2222-2222-2222-222222222222
     UserIdPath:
       name: id
       in: path
@@ -513,15 +571,72 @@ components:
       schema: { type: string, format: uuid }
   responses:
     BadRequest:
-      description: Petición mal formada o validación fallida
+      description: |
+        Petición mal formada o validación fallida (Bean Validation, cabecera
+        interna malformada en modo `EAGER`).
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorResponse' }
+          examples:
+            validation:
+              value:
+                timestamp: 2026-05-20T14:11:42.118Z
+                status: 400
+                error: Bad Request
+                code: VALIDATION.CONSTRAINT
+                message: must not be blank
+                path: /auth/users
+                metadata:
+                  violations:
+                    - path: create.req.email
+                      message: must not be blank
     Unauthorized:
       description: Credenciales inválidas o token ausente / revocado
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorResponse' }
     Forbidden:
-      description: El usuario autenticado no tiene rol suficiente
+      description: |
+        El usuario propagado no posee los flags Unix-style requeridos sobre el
+        recurso (denegado por `@RequirePermission`).
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorResponse' }
+          examples:
+            denied:
+              value:
+                timestamp: 2026-05-20T14:11:42.118Z
+                status: 403
+                error: Forbidden
+                code: AUTH.PERMISSION.DENIED
+                message: Insufficient permissions
+                path: /auth/users
+                metadata:
+                  resource: 00000000-0000-0000-0000-00000000a001
+                  required: WRITE
     NotFound:
       description: Recurso inexistente
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorResponse' }
     Conflict:
-      description: Conflicto de unicidad (email o nombre ya existe)
+      description: |
+        Conflicto de unicidad (email/nombre repetido) o invariante de dominio
+        (último SUPERUSER, rol aún asignado, etc.).
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorResponse' }
+          examples:
+            email-exists:
+              value:
+                timestamp: 2026-05-20T14:11:42.118Z
+                status: 409
+                error: Conflict
+                code: AUTH.USER.EMAIL_EXISTS
+                message: Email already in use
+                path: /auth/users
+                metadata:
+                  email: profesor@edutrack.cl
   schemas:
     LoginRequest:
       type: object
@@ -613,3 +728,66 @@ components:
         resourceUuid: { type: string, format: uuid }
         flags: { type: integer, minimum: 0, maximum: 7 }
         flagsLabel: { type: string, example: rwx }
+    AccessResponse:
+      type: object
+      description: |
+        Resultado de la verificación de acceso. Solo se devuelve cuando el
+        cliente pide `application/json`; con `text/plain` la respuesta es
+        únicamente `"1"` / `"0"`.
+      properties:
+        allowed:
+          type: boolean
+          description: ¿Los roles del usuario satisfacen el permiso pedido?
+        resourceUuid: { type: string, format: uuid }
+        required:
+          type: string
+          enum: [READ, WRITE, EXECUTE]
+        effectiveFlags:
+          type: integer
+          minimum: 0
+          maximum: 7
+          description: Flags efectivos (OR sobre los roles, incluyendo comodín `ALL`).
+        effectiveLabel:
+          type: string
+          example: rwx
+    ErrorResponse:
+      type: object
+      description: |
+        Envelope JSON único emitido por `GlobalExceptionMappers`. Campos
+        opcionales (`code`, `metadata`, `trace`) se omiten cuando son
+        `null`/vacíos.
+      required: [timestamp, status, error, message, path]
+      properties:
+        timestamp:
+          type: string
+          format: date-time
+          description: Instant ISO-8601 UTC.
+        status:
+          type: integer
+          description: HTTP status (también va en el body para clientes que pierden el status en logs).
+        error:
+          type: string
+          description: HTTP reason phrase.
+          example: Conflict
+        code:
+          type: string
+          description: |
+            Código estable de dominio (`<MS>.<ENTIDAD>.<CONDICION>` en
+            SCREAMING_SNAKE). El cliente switchea por este valor.
+          example: AUTH.USER.EMAIL_EXISTS
+        message:
+          type: string
+          description: Mensaje legible para humanos.
+        path:
+          type: string
+          description: Path de la request que falló.
+        metadata:
+          type: object
+          additionalProperties: true
+          description: Contexto estructurado (e.g. `userId`, `resource`, `required`).
+        trace:
+          type: array
+          items: { type: string }
+          description: |
+            Frames del stack (≤ 25), solo presente cuando
+            `edutrack.errors.expose-stacktrace=true` (default `false` en prod).
