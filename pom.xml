@@ -32,6 +32,11 @@
 
     <dependencies>
         <dependency>
+            <groupId>cl.duocuc.edutrack</groupId>
+            <artifactId>edutrack-ms-commons</artifactId>
+            <version>1.0.0</version>
+        </dependency>
+        <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-rest-jackson</artifactId>
         </dependency>
