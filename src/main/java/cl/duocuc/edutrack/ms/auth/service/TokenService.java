@@ -49,7 +49,7 @@ public class TokenService {
         rt.expiresAt = Instant.now().plus(refreshExpiryDays, ChronoUnit.DAYS);
         rt.persist();
 
-        return new AuthResponse(accessToken, rawRefreshToken, "Bearer", accessExpirySeconds);
+        return AuthResponse.of(accessToken, rawRefreshToken, accessExpirySeconds);
     }
 
     @Transactional

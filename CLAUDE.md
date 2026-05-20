@@ -152,7 +152,7 @@ Login    extends Base   // body de POST /auth/login
 Refresh  extends Base   // body de POST /auth/refresh
 ```
 
-**DTOs actuales** (8 archivos):
+**DTOs actuales** (9 archivos):
 
 | DTO | Componentes y vistas |
 |---|---|
@@ -164,6 +164,7 @@ Refresh  extends Base   // body de POST /auth/refresh
 | `PermissionResponse` | base + `flagsLabel` (`Base/Extra`); helper estático `toLabel(short)` |
 | `AuthRequest` | `email,password` → `Login`; `refreshToken` → `Refresh` |
 | `AuthResponse` | `accessToken,refreshToken,tokenType,expiresIn` → `Base` |
+| `AccessResponse` | `allowed,resourceUuid,required,effectiveFlags,effectiveLabel` → `Base` (solo response; entrada por query params) |
 
 **Convención de anotación de endpoints:**
 
@@ -171,7 +172,38 @@ Refresh  extends Base   // body de POST /auth/refresh
 - `GET /{id}` y respuestas tras `POST`/`PUT` → `@JsonView(Views.Detailed.class)`
 - Body de `POST` → parámetro anotado con `@JsonView(Views.Create.class)`
 - Body de `PUT` → parámetro anotado con `@JsonView(Views.Update.class)`
-- `AuthResource.login` usa `Views.Login` (req) / `Views.Base` (resp); `refresh` usa `Views.Refresh` (req) / `Views.Base` (resp)
+- `AuthResource.login` usa `Views.Login` en el req; el resp es `Views.Base` por **default global** (ver siguiente sub-sección), por lo que no se anota.
+
+### `Views.Base` como vista por defecto
+
+La vista por defecto de Jackson se configura globalmente en `cl.duocuc.edutrack.ms.infrastructure.jackson.JacksonViewCustomizer` (`ObjectMapperCustomizer` `@Singleton`):
+
+```java
+mapper.disable(MapperFeature.DEFAULT_VIEW_INCLUSION);
+mapper.setConfig(mapper.getSerializationConfig().withView(Views.Base.class));
+mapper.setConfig(mapper.getDeserializationConfig().withView(Views.Base.class));
+```
+
+`DEFAULT_VIEW_INCLUSION=false` ⇒ con una vista activa solo se serializan/deserializan propiedades anotadas con una vista compatible. Como todos los componentes de los DTOs declaran `@JsonView`, el efecto es estricto y predecible.
+
+Consecuencia práctica: **no anotar `@JsonView(Views.Base.class)`** en endpoints/parámetros — es redundante. Cualquier otro `@JsonView(...)` sobre el método/parámetro se aplica per-request vía `writer/reader.withView(...)` y sobreescribe la vista default.
+
+### Contrato `*Response.fromEntity(...)` (auto-construcción)
+
+Cada `XxxResponse` expone un factory estático que **sabe construirse desde su fuente**. La instanciación con `new XxxResponse(...)` queda confinada al propio DTO; los call sites pasan siempre por el factory.
+
+- **Entity-backed:** `public static XxxResponse fromEntity(XxxEntity entity)`. Cuando la entidad no basta porque un colaborador externo aporta datos que no son columna, el factory acepta ese colaborador como parámetro: `UserResponse.fromEntity(User user, List<UUID> roleIds)` — los `roleIds` se resuelven en el servicio (`UserRoleRepository`) y se pasan al DTO.
+- **Computado, no entity-backed:** `public static XxxResponse of(...)`. Lo usan los DTOs que no respaldan una sola fila: `AuthResponse.of(accessToken, refreshToken, expiresInSeconds)` (la constante de protocolo `tokenType="Bearer"` vive en el factory), `AccessResponse.of(allowed, resourceUuid, required, effectiveFlags)` (la etiqueta `rwx` la deriva el DTO). Si para una misma entidad se necesita además una construcción computada (p. ej. flags efectivos OR-eados sobre varios roles), conviven `fromEntity(...)` y `of(...)` en el mismo DTO — caso `PermissionResponse`.
+
+Los servicios mantienen `toResponse(Entity)` cuando aportan I/O (lookup de colaboradores) — ese método se vuelve un delegado al factory:
+
+```java
+public UserResponse toResponse(User user) {
+    return UserResponse.fromEntity(user, userRoleRepository.findRoleIdsByUserId(user.id));
+}
+```
+
+Cuando no hay I/O, el servicio puede omitirse del flujo y el recurso llamar al factory directo (p. ej. `RoleResponse.fromEntity(role)`).
 
 ## Validaciones de datos del request (regla dura)
 
@@ -196,6 +228,68 @@ Convención de anotación:
 `PermissionRequest.flags` usa `@Min(0) @Max(7)` en `Default`; el `PUT` lo valida con `@Valid` simple (sin grupo).
 
 **Frontera de alcance:** la regla cubre *validación de datos*. Los guards de **autenticación/identidad** no son validación de datos: en `AuthResource.logout`, la ausencia de identidad propagada es `401` (`RequestContext.headers().requireUserId()`) — sin identidad no hay a quién revocar; el *formato* malformado del UUID sí es dato y lo resuelve el intérprete de cabeceras (`RequestContext`) según su modo (`EAGER` ⇒ `400`). Las reglas de **negocio** (unicidad de email/nombre, "último SUPERUSER", rol aún asignado) tampoco son validación de datos y siguen como checks de dominio en el servicio devolviendo `409`.
+
+## Manejo de errores: `GlobalExceptionMappers` + `DomainException`
+
+Todo error que escape de un recurso sale en el mismo envelope JSON, emitido por `cl.duocuc.edutrack.ms.infrastructure.error.GlobalExceptionMappers` (un único bean `@ApplicationScoped` con varios `@ServerExceptionMapper` por tipo). El bean resuelve el más específico primero:
+
+| Tipo de excepción | Status | `code` |
+|---|---|---|
+| `DomainException` (y subclases) | el que carga | el de la excepción |
+| `ConstraintViolationException` (Bean Validation) | `400` | `VALIDATION.CONSTRAINT` (+ `metadata.violations[]` con `path`/`message`) |
+| `WebApplicationException` (legacy / framework) | el de su Response | `null` |
+| `Throwable` (catch-all) | `500` | `INTERNAL.UNEXPECTED` (loguea ERROR; el resto loguea DEBUG) |
+
+### `ErrorResponse` (envelope JSON único)
+
+```json
+{
+  "timestamp": "2026-05-19T20:11:42.118Z",
+  "status": 409,
+  "error": "Conflict",
+  "code": "AUTH.USER.LAST_SUPERUSER",
+  "message": "Cannot disable the last active SUPERUSER",
+  "path": "/auth/users/.../disable",
+  "metadata": { "userId": "..." }
+}
+```
+
+Campos opcionales (`code`, `metadata`, `trace`) se omiten cuando son `null`/vacíos (`@JsonInclude(NON_EMPTY)`).
+
+### Stack trace opcional
+
+`edutrack.errors.expose-stacktrace=false` (default). Cuando se activa, el envelope incluye `trace[]` con hasta 25 frames de `StackTraceElement.toString()`. Trade-off: el costo de cómputo es despreciable (la traza ya está en la excepción), pero el body crece y se filtran paquetes/clases internas; mantenerlo apagado en prod, encenderlo en dev/staging.
+
+| Propiedad | Default | Descripción |
+|---|---|---|
+| `edutrack.errors.expose-stacktrace` | `false` | `true` ⇒ incluye `ErrorResponse.trace` (≤ 25 frames) |
+
+### `DomainException` y sugar (`ConflictException`, `NotFoundException`, `ForbiddenException`)
+
+Las reglas de negocio se lanzan como `DomainException` (o sus sugar 409/404/403). La firma carga:
+
+- **status**: int o `Response.Status`;
+- **code**: string estable de dominio (`AUTH.USER.EMAIL_EXISTS`) — el cliente switchea por él, no por el mensaje;
+- **message**: humano-legible;
+- **metadata**: encadenable vía `.with(k, v)`.
+
+Convención de `code`: `AUTH.<ENTIDAD>.<CONDICION>` en SCREAMING_SNAKE. Es contrato: aunque se reformule el `message`, el `code` no cambia entre versiones.
+
+### Cómo reemplazar excepciones actuales
+
+| Antes (`WebApplicationException` crudo) | Después |
+|---|---|
+| `throw new WebApplicationException(Response.Status.NOT_FOUND)` (entidad no encontrada) | `throw new NotFoundException("AUTH.USER.NOT_FOUND", "User not found").with("id", id)` |
+| `throw new WebApplicationException(Response.Status.CONFLICT)` (unicidad) | `throw new ConflictException("AUTH.USER.EMAIL_EXISTS", "Email already in use").with("email", email)` |
+| `throw new WebApplicationException(Response.status(409).entity(Map.of("error", "...")).build())` | `throw new ConflictException("<CODE>", "<message>").with("<key>", <value>)` — la metadata viaja estructurada, no como string libre dentro de un map |
+| `throw new WebApplicationException(Response.Status.FORBIDDEN)` (autorización) | `throw new ForbiddenException("AUTH.PERMISSION.DENIED", "Insufficient permissions").with("resource", resourceUuid).with("required", "WRITE")` |
+
+Ejemplos ya migrados en este servicio:
+
+- `UserService.guardLastSuperuser` ⇒ `ConflictException("AUTH.USER.LAST_SUPERUSER", "...").with("userId", id)`.
+- `RoleService.delete` (último constraint) ⇒ `ConflictException("AUTH.ROLE.STILL_ASSIGNED", "...").with("roleId", id).with("assignedCount", n)`.
+
+Los demás `throw new WebApplicationException(Response.Status.XXX)` quedan **funcionales** (los toma el mapper de `WebApplicationException`, status correcto, sin `code`), pero su migración progresiva a `DomainException` mejora la trazabilidad: el cliente sabe *qué* falló sin parsear el mensaje, y la metadata estructurada se preserva.
 
 ## Cabeceras internas: `RequestContext` (intérprete único)
 
@@ -234,3 +328,19 @@ List<UUID> rol = requestContext.headers().roleIds();        // [] si no viajan r
 | Propiedad | Default | Descripción |
 |---|---|---|
 | `edutrack.headers.validation.mode` | `EAGER` | `EAGER` ⇒ cabecera malformada = `400`; `WARN` ⇒ se loguea y se trata como ausente |
+| `edutrack.errors.expose-stacktrace` | `false` | `true` ⇒ incluye `ErrorResponse.trace[]` (≤ 25 frames). Apagar en prod. |
+
+## Autorización: algoritmo único y endpoint público de verificación
+
+El algoritmo de decisión Unix-style **vive en un solo lugar**: `PermissionService`.
+
+- `effectiveFlags(roleIds, resourceUuid)` → flags efectivos OR-eados, **incluyendo el comodín `AuthResourceId.ALL`** (un grant sobre ALL — p. ej. SUPERUSER — cubre cualquier recurso presente/futuro).
+- `hasPermission(roleIds, resourceUuid, requiredBits)` → `(effectiveFlags & required) == required`.
+
+Tanto `RequirePermissionFilter` (anotación `@RequirePermission`, decisión interna ⇒ `403`) como el endpoint público delegan en estos métodos: **no se duplica la lógica de bits/comodín**.
+
+**`GET /auth/access`** — expone ese mismo algoritmo hacia afuera para que otros MS verifiquen el acceso del usuario propagado por el Gateway (toma sus roles de `RequestContext`, no de un `roleId` de path como `/effective`).
+
+- Query params: `resourceUuid` (UUID, `@NotNull` ⇒ ausente = `400` vía Bean Validation; malformado lo coerciona JAX-RS ⇒ RESTEasy Reactive responde `404`), `permission` (`Permission` enum, `@DefaultValue("READ")`; valor inválido ⇒ `404`).
+- **Negociación de contenido:** `text/plain` (default, `qs=1.0`, extra ligero) ⇒ cuerpo `"1"` / `"0"`; `application/json` (`qs=0.9`, solo si se pide explícito) ⇒ `AccessResponse` con `allowed`, `resourceUuid`, `required`, `effectiveFlags`, `effectiveLabel`.
+- **Público tras el Gateway**, sin `@RequirePermission`. Diseño: sin identidad propagada simplemente no hay grants que sumar ⇒ la respuesta es `"0"` / `allowed=false`, no `403`. Esto evita un *meta-guard* circular (necesitar permiso para preguntar por permisos) y deja al endpoint cumplir su rol de verificador barato consumido por otros MS.

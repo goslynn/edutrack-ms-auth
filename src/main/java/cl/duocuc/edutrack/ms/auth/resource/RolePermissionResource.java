@@ -72,6 +72,6 @@ public class RolePermissionResource {
         @QueryParam("resourceUuid") UUID resourceUuid
     ) {
         short flags = permissionService.computeEffectiveFlags(List.of(roleId), resourceUuid);
-        return new PermissionResponse(roleId, resourceUuid, flags, PermissionResponse.toLabel(flags));
+        return PermissionResponse.of(roleId, resourceUuid, flags);
     }
 }

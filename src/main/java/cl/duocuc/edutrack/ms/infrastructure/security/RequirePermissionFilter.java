@@ -15,8 +15,6 @@ import jakarta.ws.rs.core.UriInfo;
 import jakarta.ws.rs.ext.Provider;
 
 import java.lang.reflect.Method;
-import java.util.List;
-import java.util.UUID;
 
 /**
  * Filtro de request que materializa {@link RequirePermission}. Se ejecuta solo
@@ -61,14 +59,8 @@ public class RequirePermissionFilter implements ContainerRequestFilter {
             }
         }
 
-        List<UUID> roleIds = headers.roleIds();
-
-        // Flags del recurso concreto OR flags del comodín ALL (un grant sobre
-        // ALL — p.ej. SUPERUSER — concede acceso a todo recurso presente/futuro).
-        short effective = permissionService.computeEffectiveFlags(roleIds, ann.resource().uuid);
-        short wildcard = permissionService.computeEffectiveFlags(roleIds, AuthResourceId.ALL.uuid);
-        short required = ann.value().bit;
-        if (((effective | wildcard) & required) != required) {
+        // Mismo algoritmo expuesto por AccessResource: delegado a PermissionService.
+        if (!permissionService.hasPermission(headers.roleIds(), ann.resource().uuid, ann.value().bit)) {
             abort(ctx);
         }
     }

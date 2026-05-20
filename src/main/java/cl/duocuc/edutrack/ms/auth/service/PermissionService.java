@@ -4,6 +4,7 @@ import cl.duocuc.edutrack.ms.auth.model.dto.PermissionResponse;
 import cl.duocuc.edutrack.ms.auth.model.entity.Role;
 import cl.duocuc.edutrack.ms.auth.model.entity.RolePermission;
 import cl.duocuc.edutrack.ms.auth.model.repository.RolePermissionRepository;
+import cl.duocuc.edutrack.ms.infrastructure.security.AuthResourceId;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
@@ -56,10 +57,28 @@ public class PermissionService {
                 .reduce(0, (a, b) -> a | b);
     }
 
+    /**
+     * Flags efectivos de un conjunto de roles sobre un recurso, incluyendo el
+     * comodín {@link AuthResourceId#ALL} (un grant sobre ALL — p. ej. SUPERUSER —
+     * cubre cualquier recurso). Es el mismo cálculo que aplica
+     * {@code RequirePermissionFilter}.
+     */
+    public short effectiveFlags(List<UUID> roleIds, UUID resourceUuid) {
+        short concrete = computeEffectiveFlags(roleIds, resourceUuid);
+        short wildcard = computeEffectiveFlags(roleIds, AuthResourceId.ALL.uuid);
+        return (short) (concrete | wildcard);
+    }
+
+    /**
+     * ¿Los roles satisfacen el bit requerido sobre el recurso? Fuente de verdad
+     * única del algoritmo que materializa {@code @RequirePermission}: lo usan
+     * tanto el filtro como el endpoint público de verificación.
+     */
+    public boolean hasPermission(List<UUID> roleIds, UUID resourceUuid, short requiredBits) {
+        return (effectiveFlags(roleIds, resourceUuid) & requiredBits) == requiredBits;
+    }
+
     public PermissionResponse toResponse(RolePermission perm) {
-        return new PermissionResponse(
-            perm.role.id, perm.resourceUuid,
-            perm.flags, PermissionResponse.toLabel(perm.flags)
-        );
+        return PermissionResponse.fromEntity(perm);
     }
 }

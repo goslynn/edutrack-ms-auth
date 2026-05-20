@@ -27,7 +27,6 @@ public class AuthResource {
 
     @POST
     @Path("/login")
-    @JsonView(Views.Base.class)
     public AuthResponse login(
         @Valid @ConvertGroup(to = Validations.Login.class)
         @JsonView(Views.Login.class) AuthRequest req
@@ -37,7 +36,6 @@ public class AuthResource {
 
     @POST
     @Path("/refresh")
-    @JsonView(Views.Base.class)
     public AuthResponse refresh(
         @Valid @ConvertGroup(to = Validations.Refresh.class)
         @JsonView(Views.Refresh.class) AuthRequest req

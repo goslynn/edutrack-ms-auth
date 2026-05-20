@@ -5,6 +5,7 @@ import cl.duocuc.edutrack.ms.auth.model.entity.User;
 import cl.duocuc.edutrack.ms.auth.model.repository.RoleRepository;
 import cl.duocuc.edutrack.ms.auth.model.repository.UserRepository;
 import cl.duocuc.edutrack.ms.auth.model.repository.UserRoleRepository;
+import cl.duocuc.edutrack.ms.infrastructure.error.ConflictException;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
@@ -12,7 +13,6 @@ import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.Response;
 
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 
 @ApplicationScoped
@@ -71,11 +71,7 @@ public class UserService {
     }
 
     public UserResponse toResponse(User user) {
-        List<UUID> roleIds = userRoleRepository.findRoleIdsByUserId(user.id);
-        return new UserResponse(
-            user.id, user.email, user.displayName,
-            user.enabled, user.createdAt, user.updatedAt, roleIds
-        );
+        return UserResponse.fromEntity(user, userRoleRepository.findRoleIdsByUserId(user.id));
     }
 
     private void guardLastSuperuser(UUID userId) {
@@ -83,9 +79,10 @@ public class UserService {
             if (userRoleRepository.existsAssignment(userId, sr.id)) {
                 long remaining = userRoleRepository.countActiveByRoleIdExcluding(sr.id, userId);
                 if (remaining == 0) {
-                    throw new WebApplicationException(Response.status(409)
-                        .entity(Map.of("error", "Cannot disable the last active SUPERUSER"))
-                        .build());
+                    throw new ConflictException(
+                        "AUTH.USER.LAST_SUPERUSER",
+                        "Cannot disable the last active SUPERUSER")
+                        .with("userId", userId);
                 }
             }
         });
