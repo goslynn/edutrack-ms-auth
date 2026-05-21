@@ -37,6 +37,11 @@ public class TokenService {
     @Inject
     RefreshTokenRepository refreshTokenRepository;
 
+    private static final String JWT_ISSUER = "edutrack-auth";
+    private static final String JWT_ROLES_CLAIM = "roles";
+
+    private static volatile MessageDigest MD;
+
     @Transactional
     public AuthResponse issueTokenPair(User user) {
         List<UUID> roleIds = userRoleRepository.findRoleIdsByUserId(user.id);
@@ -70,20 +75,30 @@ public class TokenService {
 
     private String buildAccessToken(UUID userId, List<UUID> roleIds) {
         List<String> roles = roleIds.stream().map(UUID::toString).toList();
-        return Jwt.issuer("edutrack-auth")
+        return Jwt.issuer(JWT_ISSUER)
             .subject(userId.toString())
-            .claim("roles", roles)
+            .claim(JWT_ROLES_CLAIM, roles)
             .expiresAt(Instant.now().plusSeconds(accessExpirySeconds))
             .sign();
     }
 
-    public String hashToken(String rawToken) {
-        try {
-            byte[] hash = MessageDigest.getInstance("SHA-256")
-                .digest(rawToken.getBytes(StandardCharsets.UTF_8));
-            return HexFormat.of().formatHex(hash);
-        } catch (NoSuchAlgorithmException e) {
-            throw new RuntimeException(e);
+
+    private static MessageDigest messageDigest() {
+        if (MD == null) {
+            try {
+                MD = MessageDigest.getInstance("SHA-256");
+            } catch (NoSuchAlgorithmException e) {
+                throw new RuntimeException(e);
+            }
         }
+        return MD;
     }
+
+    public String hashToken(String rawToken) {
+        byte[] hash = messageDigest()
+                .digest(rawToken.getBytes(StandardCharsets.UTF_8));
+
+        return HexFormat.of().formatHex(hash);
+    }
+
 }

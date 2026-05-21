@@ -1,10 +1,11 @@
-package cl.duocuc.edutrack.ms.auth.service;
+package cl.duocuc.edutrack.ms.auth.service.boostrap;
 
 import cl.duocuc.edutrack.ms.auth.model.entity.Role;
 import cl.duocuc.edutrack.ms.auth.model.entity.User;
 import cl.duocuc.edutrack.ms.auth.model.entity.UserRole;
 import cl.duocuc.edutrack.ms.auth.repository.RoleRepository;
 import cl.duocuc.edutrack.ms.auth.repository.UserRepository;
+import cl.duocuc.edutrack.ms.auth.service.PasswordService;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;

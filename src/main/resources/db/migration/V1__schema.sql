@@ -9,15 +9,19 @@ CREATE TABLE auth.users (
     display_name  VARCHAR(30)  NOT NULL,
     enabled       BOOLEAN      NOT NULL DEFAULT TRUE,
     created_at    TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
-    updated_at    TIMESTAMPTZ  NOT NULL DEFAULT NOW()
+    updated_at    TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+    creator_user  UUID         NOT NULL,
+    updater_user  UUID         NOT NULL
 );
 
 CREATE TABLE auth.roles (
-    id          UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
-    name        VARCHAR(100) NOT NULL UNIQUE,
-    description VARCHAR(500),
-    created_at  TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
-    updated_at  TIMESTAMPTZ  NOT NULL DEFAULT NOW()
+    id           UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
+    name         VARCHAR(100) NOT NULL UNIQUE,
+    description  VARCHAR(500),
+    created_at   TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+    updated_at   TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+    creator_user UUID         NOT NULL,
+    updater_user UUID         NOT NULL
 );
 
 CREATE TABLE auth.user_roles (
@@ -34,6 +38,8 @@ CREATE TABLE auth.role_permissions (
     flags         SMALLINT    NOT NULL CHECK (flags >= 0 AND flags <= 7),
     created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    creator_user  UUID        NOT NULL,
+    updater_user  UUID        NOT NULL,
     CONSTRAINT uq_role_permissions_role_resource UNIQUE (role_id, resource_uuid)
 );
 
@@ -44,7 +50,8 @@ CREATE TABLE auth.refresh_tokens (
     expires_at  TIMESTAMPTZ  NOT NULL,
     revoked     BOOLEAN      NOT NULL DEFAULT FALSE,
     revoked_at  TIMESTAMPTZ,
-    created_at  TIMESTAMPTZ  NOT NULL DEFAULT NOW()
+    created_at   TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    creator_user UUID        NOT NULL
 );
 
 CREATE INDEX idx_user_roles_user_id        ON auth.user_roles(user_id);

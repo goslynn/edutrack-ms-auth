@@ -1,6 +1,5 @@
-package cl.duocuc.edutrack.ms.auth.resource;
+package cl.duocuc.edutrack.ms.auth.service.boostrap;
 
-import cl.duocuc.edutrack.ms.auth.service.AdminSeeder;
 import io.quarkus.runtime.StartupEvent;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
