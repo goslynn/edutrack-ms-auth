@@ -3,7 +3,7 @@ package cl.duocuc.edutrack.ms.auth.service;
 import cl.duocuc.edutrack.ms.auth.model.dto.PermissionResponse;
 import cl.duocuc.edutrack.ms.auth.model.entity.Role;
 import cl.duocuc.edutrack.ms.auth.model.entity.RolePermission;
-import cl.duocuc.edutrack.ms.auth.model.repository.RolePermissionRepository;
+import cl.duocuc.edutrack.ms.auth.repository.RolePermissionRepository;
 import cl.duocuc.edutrack.ms.infrastructure.security.PermissionEvaluator;
 import cl.duocuc.edutrack.ms.infrastructure.security.ResourceIds;
 import jakarta.enterprise.context.ApplicationScoped;

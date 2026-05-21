@@ -1,4 +1,4 @@
-package cl.duocuc.edutrack.ms.auth.model.repository;
+package cl.duocuc.edutrack.ms.auth.repository;
 
 import cl.duocuc.edutrack.ms.auth.model.entity.Role;
 import io.quarkus.hibernate.orm.panache.PanacheRepositoryBase;

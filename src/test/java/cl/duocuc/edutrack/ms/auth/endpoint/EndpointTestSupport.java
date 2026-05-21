@@ -1,8 +1,8 @@
 package cl.duocuc.edutrack.ms.auth.endpoint;
 
 import cl.duocuc.edutrack.ms.auth.model.entity.User;
-import cl.duocuc.edutrack.ms.auth.model.repository.RoleRepository;
-import cl.duocuc.edutrack.ms.auth.model.repository.UserRepository;
+import cl.duocuc.edutrack.ms.auth.repository.RoleRepository;
+import cl.duocuc.edutrack.ms.auth.repository.UserRepository;
 import jakarta.inject.Inject;
 
 import java.util.UUID;

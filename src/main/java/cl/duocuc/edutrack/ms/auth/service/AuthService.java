@@ -2,8 +2,8 @@ package cl.duocuc.edutrack.ms.auth.service;
 
 import cl.duocuc.edutrack.ms.auth.model.dto.AuthResponse;
 import cl.duocuc.edutrack.ms.auth.model.entity.User;
-import cl.duocuc.edutrack.ms.auth.model.repository.RefreshTokenRepository;
-import cl.duocuc.edutrack.ms.auth.model.repository.UserRepository;
+import cl.duocuc.edutrack.ms.auth.repository.RefreshTokenRepository;
+import cl.duocuc.edutrack.ms.auth.repository.UserRepository;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;

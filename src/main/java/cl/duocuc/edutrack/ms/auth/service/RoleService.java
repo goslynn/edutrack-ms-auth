@@ -3,7 +3,7 @@ package cl.duocuc.edutrack.ms.auth.service;
 import cl.duocuc.edutrack.ms.auth.model.dto.RoleResponse;
 import cl.duocuc.edutrack.ms.auth.model.entity.Role;
 import cl.duocuc.edutrack.ms.auth.model.entity.UserRole;
-import cl.duocuc.edutrack.ms.auth.model.repository.RoleRepository;
+import cl.duocuc.edutrack.ms.auth.repository.RoleRepository;
 import cl.duocuc.edutrack.ms.infrastructure.exception.ConflictException;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;

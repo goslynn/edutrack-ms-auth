@@ -2,6 +2,7 @@ package cl.duocuc.edutrack.ms.auth.model.repository;
 
 import cl.duocuc.edutrack.ms.auth.model.entity.RefreshToken;
 import cl.duocuc.edutrack.ms.auth.model.entity.User;
+import cl.duocuc.edutrack.ms.auth.repository.RefreshTokenRepository;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.TestTransaction;
 import jakarta.inject.Inject;

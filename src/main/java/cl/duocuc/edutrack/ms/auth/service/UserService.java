@@ -2,9 +2,9 @@ package cl.duocuc.edutrack.ms.auth.service;
 
 import cl.duocuc.edutrack.ms.auth.model.dto.UserResponse;
 import cl.duocuc.edutrack.ms.auth.model.entity.User;
-import cl.duocuc.edutrack.ms.auth.model.repository.RoleRepository;
-import cl.duocuc.edutrack.ms.auth.model.repository.UserRepository;
-import cl.duocuc.edutrack.ms.auth.model.repository.UserRoleRepository;
+import cl.duocuc.edutrack.ms.auth.repository.RoleRepository;
+import cl.duocuc.edutrack.ms.auth.repository.UserRepository;
+import cl.duocuc.edutrack.ms.auth.repository.UserRoleRepository;
 import cl.duocuc.edutrack.ms.infrastructure.exception.ConflictException;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;

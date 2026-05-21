@@ -2,6 +2,7 @@ package cl.duocuc.edutrack.ms.auth.model.repository;
 
 import cl.duocuc.edutrack.ms.auth.model.entity.Role;
 import cl.duocuc.edutrack.ms.auth.model.entity.RolePermission;
+import cl.duocuc.edutrack.ms.auth.repository.RolePermissionRepository;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.TestTransaction;
 import jakarta.inject.Inject;
