@@ -11,7 +11,11 @@ public class DataInitializer {
     @Inject
     AdminSeeder adminSeeder;
 
+    @Inject
+    NoopUserSeeder noopSeeder;
+
     void onStart(@Observes StartupEvent event) {
         adminSeeder.seedIfNeeded();
+        noopSeeder.seedIfNeeded();
     }
 }

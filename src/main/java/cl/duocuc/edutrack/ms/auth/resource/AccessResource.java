@@ -33,7 +33,7 @@ import java.util.UUID;
  *   <li>{@code application/json}: {@link AccessResponse} con flags efectivos.</li>
  * </ul>
  */
-@Path("/auth/access")
+@Path("/access")
 public class AccessResource {
 
     @Inject

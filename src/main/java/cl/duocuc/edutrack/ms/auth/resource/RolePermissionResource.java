@@ -17,7 +17,7 @@ import jakarta.ws.rs.core.Response;
 import java.util.List;
 import java.util.UUID;
 
-@Path("/auth/roles/{roleId}/permissions")
+@Path("/roles/{roleId}/permissions")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
 public class RolePermissionResource {

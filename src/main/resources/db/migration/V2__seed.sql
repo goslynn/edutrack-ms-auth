@@ -12,13 +12,13 @@
 -- aquí — lo crea `AdminSeeder.seedIfNeeded()` al primer arranque si la tabla
 -- `auth.users` está vacía, con password hasheado vía bcrypt.
 
-INSERT INTO auth.roles (name, description) VALUES
-    ('SUPERUSER', 'Superusuario con acceso total al sistema'),
-    ('ADMIN',     'Administrador del establecimiento educacional'),
-    ('DOCENTE',   'Docente del establecimiento');
+INSERT INTO auth.roles (name, description, creator_user, updater_user) VALUES
+    ('SUPERUSER', 'Superusuario con acceso total al sistema', '019e5c76-eaed-72c1-ad2c-c3bd0536d71d', '019e5c76-eaed-72c1-ad2c-c3bd0536d71d'),
+    ('ADMIN',     'Administrador del establecimiento educacional', '019e5c76-eaed-72c1-ad2c-c3bd0536d71d', '019e5c76-eaed-72c1-ad2c-c3bd0536d71d'),
+    ('DOCENTE',   'Docente del establecimiento', '019e5c76-eaed-72c1-ad2c-c3bd0536d71d', '019e5c76-eaed-72c1-ad2c-c3bd0536d71d');
 
-INSERT INTO auth.role_permissions (role_id, resource_uuid, flags)
-SELECT r.id, seed.resource_uuid, seed.flags
+INSERT INTO auth.role_permissions (role_id, resource_uuid, flags, creator_user, updater_user)
+SELECT r.id, seed.resource_uuid, seed.flags, '019e5c76-eaed-72c1-ad2c-c3bd0536d71d', '019e5c76-eaed-72c1-ad2c-c3bd0536d71d'
 FROM (VALUES
     -- SUPERUSER: comodín ALL ⇒ rwx sobre cualquier recurso.
     ('SUPERUSER', '00000000-0000-0000-0000-000000000000'::uuid, 7::smallint),
