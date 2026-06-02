@@ -52,7 +52,7 @@ public class AccessResource {
     }
 
     @GET
-    @Produces("application/json;qs=0.9")
+    @Produces(MediaType.APPLICATION_JSON)
     public AccessResponse checkJson(
         @NotNull @QueryParam("resourceUuid") UUID resourceUuid,
         @DefaultValue("READ") @QueryParam("permission") Permission permission
