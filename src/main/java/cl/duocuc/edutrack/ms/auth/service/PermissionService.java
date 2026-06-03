@@ -22,11 +22,11 @@ public class PermissionService implements PermissionEvaluator {
     RolePermissionRepository permissionRepository;
 
     @Transactional
-    public RolePermission upsert(UUID roleId, UUID resourceUuid, short flags) {
+    public RolePermission upsert(UUID roleId, String resourceKey, short flags) {
         Role role = (Role) Role.findByIdOptional(roleId)
             .orElseThrow(() -> new WebApplicationException(Response.Status.NOT_FOUND));
 
-        return permissionRepository.findByRoleAndResource(roleId, resourceUuid)
+        return permissionRepository.findByRoleAndResource(roleId, resourceKey)
             .map(existing -> {
                 existing.flags = flags;
                 return existing;
@@ -34,7 +34,7 @@ public class PermissionService implements PermissionEvaluator {
             .orElseGet(() -> {
                 RolePermission perm = new RolePermission();
                 perm.role = role;
-                perm.resourceUuid = resourceUuid;
+                perm.resourceKey = resourceKey;
                 perm.flags = flags;
                 perm.persist();
                 return perm;
@@ -46,14 +46,14 @@ public class PermissionService implements PermissionEvaluator {
     }
 
     @Transactional
-    public void delete(UUID roleId, UUID resourceUuid) {
-        RolePermission perm = permissionRepository.findByRoleAndResource(roleId, resourceUuid)
+    public void delete(UUID roleId, String resourceKey) {
+        RolePermission perm = permissionRepository.findByRoleAndResource(roleId, resourceKey)
             .orElseThrow(() -> new WebApplicationException(Response.Status.NOT_FOUND));
         perm.delete();
     }
 
-    public short computeEffectiveFlags(List<UUID> roleIds, UUID resourceUuid) {
-        return (short) permissionRepository.findByRolesAndResource(roleIds, resourceUuid)
+    public short computeEffectiveFlags(List<UUID> roleIds, String resourceKey) {
+        return (short) permissionRepository.findByRolesAndResource(roleIds, resourceKey)
                 .stream().mapToInt(p -> p.flags)
                 .reduce(0, (a, b) -> a | b);
     }
@@ -64,8 +64,8 @@ public class PermissionService implements PermissionEvaluator {
      * SUPERUSER — cubre cualquier recurso). Es el mismo cálculo que aplica
      * {@code RequirePermissionFilter}.
      */
-    public short effectiveFlags(List<UUID> roleIds, UUID resourceUuid) {
-        short concrete = computeEffectiveFlags(roleIds, resourceUuid);
+    public short effectiveFlags(List<UUID> roleIds, String resourceKey) {
+        short concrete = computeEffectiveFlags(roleIds, resourceKey);
         short wildcard = computeEffectiveFlags(roleIds, ResourceIds.ALL);
         return (short) (concrete | wildcard);
     }
@@ -77,8 +77,8 @@ public class PermissionService implements PermissionEvaluator {
      * de verificación.
      */
     @Override
-    public boolean hasPermission(List<UUID> roleIds, UUID resourceUuid, short requiredBits) {
-        return (effectiveFlags(roleIds, resourceUuid) & requiredBits) == requiredBits;
+    public boolean hasPermission(List<UUID> roleIds, String resourceKey, short requiredBits) {
+        return (effectiveFlags(roleIds, resourceKey) & requiredBits) == requiredBits;
     }
 
     public PermissionResponse toResponse(RolePermission perm) {

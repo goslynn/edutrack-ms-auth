@@ -13,8 +13,6 @@ import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MediaType;
 
-import java.util.UUID;
-
 /**
  * Verificación de acceso para consumo de otros microservicios. Aplica el mismo
  * algoritmo que materializa {@code @RequirePermission} (delegado a
@@ -45,27 +43,27 @@ public class AccessResource {
     @GET
     @Produces(MediaType.TEXT_PLAIN)
     public String checkPlain(
-        @NotNull @QueryParam("resourceUuid") UUID resourceUuid,
+        @NotNull @QueryParam("resourceKey") String resourceKey,
         @DefaultValue("READ") @QueryParam("permission") Permission permission
     ) {
-        return allowed(resourceUuid, permission) ? "1" : "0";
+        return allowed(resourceKey, permission) ? "1" : "0";
     }
 
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     public AccessResponse checkJson(
-        @NotNull @QueryParam("resourceUuid") UUID resourceUuid,
+        @NotNull @QueryParam("resourceKey") String resourceKey,
         @DefaultValue("READ") @QueryParam("permission") Permission permission
     ) {
         short effective = permissionService.effectiveFlags(
-            requestContext.headers().roleIds(), resourceUuid);
+            requestContext.headers().roleIds(), resourceKey);
         return AccessResponse.of(
             (effective & permission.bit) == permission.bit,
-            resourceUuid, permission, effective);
+            resourceKey, permission, effective);
     }
 
-    private boolean allowed(UUID resourceUuid, Permission permission) {
+    private boolean allowed(String resourceKey, Permission permission) {
         return permissionService.hasPermission(
-            requestContext.headers().roleIds(), resourceUuid, permission.bit);
+            requestContext.headers().roleIds(), resourceKey, permission.bit);
     }
 }

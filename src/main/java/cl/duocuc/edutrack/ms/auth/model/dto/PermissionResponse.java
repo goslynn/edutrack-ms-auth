@@ -8,14 +8,14 @@ import java.util.UUID;
 
 public record PermissionResponse(
     @JsonView(Views.Base.class) UUID roleId,
-    @JsonView(Views.Base.class) UUID resourceUuid,
+    @JsonView(Views.Base.class) String resourceKey,
     @JsonView(Views.Base.class) short flags,
     @JsonView({Views.Base.class, Views.Extra.class}) String flagsLabel
 ) {
 
     /** Factory canónico. */
     public static PermissionResponse fromEntity(RolePermission perm) {
-        return new PermissionResponse(perm.role.id, perm.resourceUuid, perm.flags, toLabel(perm.flags));
+        return new PermissionResponse(perm.role.id, perm.resourceKey, perm.flags, toLabel(perm.flags));
     }
 
     /**
@@ -23,8 +23,8 @@ public record PermissionResponse(
      * fila (p. ej. flags efectivos OR-eados sobre varios roles). El contrato
      * sigue vivo: el DTO sabe ensamblarse, el call site solo pasa los datos.
      */
-    public static PermissionResponse of(UUID roleId, UUID resourceUuid, short flags) {
-        return new PermissionResponse(roleId, resourceUuid, flags, toLabel(flags));
+    public static PermissionResponse of(UUID roleId, String resourceKey, short flags) {
+        return new PermissionResponse(roleId, resourceKey, flags, toLabel(flags));
     }
 
     public static String toLabel(short flags) {

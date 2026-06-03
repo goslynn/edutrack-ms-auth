@@ -170,7 +170,7 @@ class RoleCrudTest {
 
         RolePermission perm = new RolePermission();
         perm.role = r;
-        perm.resourceUuid = UUID.randomUUID();
+        perm.resourceKey = "test." + UUID.randomUUID();
         perm.flags = 4;
         perm.persist();
         Role.getEntityManager().flush();

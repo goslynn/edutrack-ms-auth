@@ -5,22 +5,21 @@ import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.http.ContentType;
 import org.junit.jupiter.api.Test;
 
-import java.util.UUID;
-
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.*;
 
 @QuarkusTest
 class AccessEndpointTest extends EndpointTestSupport {
 
-    private static final String ROLES = AuthResourceId.ROLES.uuid.toString();          // a002
-    private static final String EFFECTIVE = AuthResourceId.PERMISSIONS_EFFECTIVE.uuid.toString(); // a004
+    private static final String ROLES = AuthResourceId.Key.ROLES;                     // auth.roles
+    private static final String EFFECTIVE = AuthResourceId.Key.PERMISSIONS_EFFECTIVE; // auth.permissions.effective
+    private static final String UNKNOWN = "unknown.resource";
 
     // El endpoint es público (sin @RequirePermission). Sin identidad propagada
     // simplemente no hay roles → no hay grants → "0", no 403.
     @Test
     void sinRol_retorna0() {
-        given().queryParam("resourceUuid", ROLES).queryParam("permission", "READ")
+        given().queryParam("resourceKey", ROLES).queryParam("permission", "READ")
         .when().get("/auth/access")
         .then().statusCode(200).body(is("0"));
     }
@@ -28,7 +27,7 @@ class AccessEndpointTest extends EndpointTestSupport {
     @Test
     void docenteConGrantDeLectura_retorna1() {
         given().header("X-User-Roles", docenteHeader())
-            .queryParam("resourceUuid", ROLES).queryParam("permission", "READ")
+            .queryParam("resourceKey", ROLES).queryParam("permission", "READ")
         .when().get("/auth/access")
         .then().statusCode(200)
             .contentType(ContentType.TEXT)
@@ -38,7 +37,7 @@ class AccessEndpointTest extends EndpointTestSupport {
     @Test
     void docenteSinGrantDeEscritura_retorna0() {
         given().header("X-User-Roles", docenteHeader())
-            .queryParam("resourceUuid", ROLES).queryParam("permission", "WRITE")
+            .queryParam("resourceKey", ROLES).queryParam("permission", "WRITE")
         .when().get("/auth/access")
         .then().statusCode(200).body(is("0"));
     }
@@ -46,7 +45,7 @@ class AccessEndpointTest extends EndpointTestSupport {
     @Test
     void docenteRecursoDesconocido_retorna0() {
         given().header("X-User-Roles", docenteHeader())
-            .queryParam("resourceUuid", UUID.randomUUID().toString())
+            .queryParam("resourceKey", UNKNOWN)
             .queryParam("permission", "READ")
         .when().get("/auth/access")
         .then().statusCode(200).body(is("0"));
@@ -55,7 +54,7 @@ class AccessEndpointTest extends EndpointTestSupport {
     @Test
     void permissionPorDefectoEsRead() {
         given().header("X-User-Roles", docenteHeader())
-            .queryParam("resourceUuid", ROLES)
+            .queryParam("resourceKey", ROLES)
         .when().get("/auth/access")
         .then().statusCode(200).body(is("1"));
     }
@@ -63,7 +62,7 @@ class AccessEndpointTest extends EndpointTestSupport {
     @Test
     void superuserComodinCubreCualquierRecurso() {
         given().header("X-User-Roles", superuserHeader())
-            .queryParam("resourceUuid", UUID.randomUUID().toString())
+            .queryParam("resourceKey", UNKNOWN)
             .queryParam("permission", "WRITE")
         .when().get("/auth/access")
         .then().statusCode(200).body(is("1"));
@@ -73,7 +72,7 @@ class AccessEndpointTest extends EndpointTestSupport {
     void jsonDevuelveFlagsEfectivos() {
         given().header("X-User-Roles", docenteHeader())
             .accept(ContentType.JSON)
-            .queryParam("resourceUuid", ROLES).queryParam("permission", "READ")
+            .queryParam("resourceKey", ROLES).queryParam("permission", "READ")
         .when().get("/auth/access")
         .then().statusCode(200)
             .contentType(ContentType.JSON)
@@ -81,14 +80,14 @@ class AccessEndpointTest extends EndpointTestSupport {
             .body("required", equalTo("READ"))
             .body("effectiveFlags", equalTo(4))
             .body("effectiveLabel", equalTo("r--"))
-            .body("resourceUuid", equalTo(ROLES));
+            .body("resourceKey", equalTo(ROLES));
     }
 
     @Test
     void jsonAccesoDenegado() {
         given().header("X-User-Roles", docenteHeader())
             .accept(ContentType.JSON)
-            .queryParam("resourceUuid", ROLES).queryParam("permission", "WRITE")
+            .queryParam("resourceKey", ROLES).queryParam("permission", "WRITE")
         .when().get("/auth/access")
         .then().statusCode(200)
             .body("allowed", equalTo(false))
@@ -96,28 +95,17 @@ class AccessEndpointTest extends EndpointTestSupport {
     }
 
     @Test
-    void resourceUuidAusente_retorna400() {
+    void resourceKeyAusente_retorna400() {
         given().header("X-User-Roles", docenteHeader())
             .queryParam("permission", "READ")
         .when().get("/auth/access")
         .then().statusCode(400);
     }
 
-    // Coerción fallida de un @QueryParam tipado (UUID / enum) la resuelve
-    // JAX-RS, no Bean Validation: RESTEasy Reactive responde 404 (no hay
-    // recurso que matchee). No se valida a mano con try/catch.
-    @Test
-    void resourceUuidMalformado_retorna404() {
-        given().header("X-User-Roles", docenteHeader())
-            .queryParam("resourceUuid", "not-a-uuid")
-        .when().get("/auth/access")
-        .then().statusCode(404);
-    }
-
     @Test
     void permissionInvalido_retorna404() {
         given().header("X-User-Roles", docenteHeader())
-            .queryParam("resourceUuid", EFFECTIVE).queryParam("permission", "FLY")
+            .queryParam("resourceKey", EFFECTIVE).queryParam("permission", "FLY")
         .when().get("/auth/access")
         .then().statusCode(404);
     }

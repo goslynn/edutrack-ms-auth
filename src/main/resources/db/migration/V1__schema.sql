@@ -32,15 +32,15 @@ CREATE TABLE auth.user_roles (
 );
 
 CREATE TABLE auth.role_permissions (
-    id            UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
-    role_id       UUID        NOT NULL REFERENCES auth.roles(id) ON DELETE CASCADE,
-    resource_uuid UUID        NOT NULL,
-    flags         SMALLINT    NOT NULL CHECK (flags >= 0 AND flags <= 7),
-    created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    updated_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    creator_user  UUID        NOT NULL,
-    updater_user  UUID        NOT NULL,
-    CONSTRAINT uq_role_permissions_role_resource UNIQUE (role_id, resource_uuid)
+    id            UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
+    role_id       UUID         NOT NULL REFERENCES auth.roles(id) ON DELETE CASCADE,
+    resource_key  VARCHAR(150) NOT NULL,
+    flags         SMALLINT     NOT NULL CHECK (flags >= 0 AND flags <= 7),
+    created_at    TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+    updated_at    TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+    creator_user  UUID         NOT NULL,
+    updater_user  UUID         NOT NULL,
+    CONSTRAINT uq_role_permissions_role_resource UNIQUE (role_id, resource_key)
 );
 
 CREATE TABLE auth.refresh_tokens (

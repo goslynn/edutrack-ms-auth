@@ -35,14 +35,14 @@ public class UserResource {
 
     @GET
     @JsonView(Views.List.class)
-    @RequirePermission(resource = AuthResourceId.Uuid.USERS, value = Permission.READ)
+    @RequirePermission(resource = AuthResourceId.Key.USERS, value = Permission.READ)
     public List<UserResponse> list() {
         return userService.listAll().stream().map(userService::toResponse).toList();
     }
 
     @POST
     @JsonView(Views.Detailed.class)
-    @RequirePermission(resource = AuthResourceId.Uuid.USERS, value = Permission.WRITE)
+    @RequirePermission(resource = AuthResourceId.Key.USERS, value = Permission.WRITE)
     public Response create(
         @Valid @ConvertGroup(to = Validations.Create.class)
         @JsonView(Views.Create.class) UserRequest req
@@ -56,7 +56,7 @@ public class UserResource {
     @GET
     @Path("/{id}")
     @JsonView(Views.Detailed.class)
-    @RequirePermission(resource = AuthResourceId.Uuid.USERS, value = Permission.READ, selfParam = "id")
+    @RequirePermission(resource = AuthResourceId.Key.USERS, value = Permission.READ, selfParam = "id")
     public UserResponse get(@PathParam("id") UUID id) {
         return userService.toResponse(userService.findById(id));
     }
@@ -64,7 +64,7 @@ public class UserResource {
     @PUT
     @Path("/{id}")
     @JsonView(Views.Detailed.class)
-    @RequirePermission(resource = AuthResourceId.Uuid.USERS, value = Permission.WRITE)
+    @RequirePermission(resource = AuthResourceId.Key.USERS, value = Permission.WRITE)
     public UserResponse update(
         @PathParam("id") UUID id,
         @Valid @JsonView(Views.Update.class) UserRequest req
@@ -75,7 +75,7 @@ public class UserResource {
 
     @DELETE
     @Path("/{id}")
-    @RequirePermission(resource = AuthResourceId.Uuid.USERS, value = Permission.WRITE)
+    @RequirePermission(resource = AuthResourceId.Key.USERS, value = Permission.WRITE)
     public Response disable(@PathParam("id") UUID id) {
         userService.disable(id);
         return Response.noContent().build();
@@ -83,7 +83,7 @@ public class UserResource {
 
     @DELETE
     @Path("/{id}/sessions")
-    @RequirePermission(resource = AuthResourceId.Uuid.USERS, value = Permission.WRITE)
+    @RequirePermission(resource = AuthResourceId.Key.USERS, value = Permission.WRITE)
     public Response revokeSessions(@PathParam("id") UUID id) {
         userService.findById(id);
         authService.logout(id);

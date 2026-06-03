@@ -21,6 +21,10 @@ class RolePermissionRepositoryTest {
     @Inject
     RolePermissionRepository repo;
 
+    private static String key() {
+        return "test." + UUID.randomUUID();
+    }
+
     private Role superuser() {
         return Role.<Role>find("name", "SUPERUSER").firstResult();
     }
@@ -29,10 +33,10 @@ class RolePermissionRepositoryTest {
         return Role.<Role>find("name", "ADMIN").firstResult();
     }
 
-    private RolePermission buildPerm(Role role, UUID resource, short flags) {
+    private RolePermission buildPerm(Role role, String resourceKey, short flags) {
         RolePermission p = new RolePermission();
         p.role = role;
-        p.resourceUuid = resource;
+        p.resourceKey = resourceKey;
         p.flags = flags;
         p.persist();
         return p;
@@ -42,7 +46,7 @@ class RolePermissionRepositoryTest {
 
     @Test
     void findByRoleAndResource_retornaPermiso() {
-        UUID resource = UUID.randomUUID();
+        String resource = key();
         buildPerm(superuser(), resource, (short) 6);
         RolePermission.getEntityManager().flush();
 
@@ -54,7 +58,7 @@ class RolePermissionRepositoryTest {
 
     @Test
     void findByRoleAndResource_retornaVacioSiNoExiste() {
-        assertTrue(repo.findByRoleAndResource(superuser().id, UUID.randomUUID()).isEmpty());
+        assertTrue(repo.findByRoleAndResource(superuser().id, key()).isEmpty());
     }
 
     // ── findByRoleId ──────────────────────────────────────────────────────────
@@ -62,8 +66,8 @@ class RolePermissionRepositoryTest {
     @Test
     void findByRoleId_retornaPermisosDelRol() {
         Role su = superuser();
-        buildPerm(su, UUID.randomUUID(), (short) 4);
-        buildPerm(su, UUID.randomUUID(), (short) 2);
+        buildPerm(su, key(), (short) 4);
+        buildPerm(su, key(), (short) 2);
         RolePermission.getEntityManager().flush();
 
         List<RolePermission> result = repo.findByRoleId(su.id);
@@ -76,7 +80,7 @@ class RolePermissionRepositoryTest {
 
     @Test
     void computeEffectiveFlags_unionDeFlagsDeMultiplesRoles() {
-        UUID resource = UUID.randomUUID();
+        String resource = key();
         buildPerm(superuser(), resource, (short) 4); // r
         buildPerm(admin(),     resource, (short) 2); // w
         RolePermission.getEntityManager().flush();
@@ -89,18 +93,18 @@ class RolePermissionRepositoryTest {
 
     @Test
     void computeEffectiveFlags_sinRoles_retornaCero() {
-        assertEquals(0, repo.computeEffectiveFlags(List.of(), UUID.randomUUID()));
+        assertEquals(0, repo.computeEffectiveFlags(List.of(), key()));
     }
 
     @Test
     void computeEffectiveFlags_sinPermisosParaRecurso_retornaCero() {
-        UUID resource = UUID.randomUUID();
+        String resource = key();
         assertEquals(0, repo.computeEffectiveFlags(List.of(superuser().id), resource));
     }
 
     @Test
     void computeEffectiveFlags_unSoloRolConTodosLosFlags() {
-        UUID resource = UUID.randomUUID();
+        String resource = key();
         buildPerm(superuser(), resource, (short) 7);
         RolePermission.getEntityManager().flush();
 

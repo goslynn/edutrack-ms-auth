@@ -30,14 +30,14 @@ public class RoleResource {
 
     @GET
     @JsonView(Views.List.class)
-    @RequirePermission(resource = AuthResourceId.Uuid.ROLES, value = Permission.READ)
+    @RequirePermission(resource = AuthResourceId.Key.ROLES, value = Permission.READ)
     public List<RoleResponse> list() {
         return roleService.listAll().stream().map(roleService::toResponse).toList();
     }
 
     @POST
     @JsonView(Views.Detailed.class)
-    @RequirePermission(resource = AuthResourceId.Uuid.ROLES, value = Permission.WRITE)
+    @RequirePermission(resource = AuthResourceId.Key.ROLES, value = Permission.WRITE)
     public Response create(
         @Valid @ConvertGroup(from = Default.class, to = Validations.Create.class)
         @JsonView(Views.Create.class) RoleRequest req
@@ -50,7 +50,7 @@ public class RoleResource {
     @GET
     @Path("/{id}")
     @JsonView(Views.Detailed.class)
-    @RequirePermission(resource = AuthResourceId.Uuid.ROLES, value = Permission.READ)
+    @RequirePermission(resource = AuthResourceId.Key.ROLES, value = Permission.READ)
     public RoleResponse get(@PathParam("id") UUID id) {
         return roleService.toResponse(roleService.findById(id));
     }
@@ -58,7 +58,7 @@ public class RoleResource {
     @PUT
     @Path("/{id}")
     @JsonView(Views.Detailed.class)
-    @RequirePermission(resource = AuthResourceId.Uuid.ROLES, value = Permission.WRITE)
+    @RequirePermission(resource = AuthResourceId.Key.ROLES, value = Permission.WRITE)
     public RoleResponse update(
         @PathParam("id") UUID id,
         @Valid @JsonView(Views.Update.class) RoleRequest req
@@ -68,7 +68,7 @@ public class RoleResource {
 
     @DELETE
     @Path("/{id}")
-    @RequirePermission(resource = AuthResourceId.Uuid.ROLES, value = Permission.WRITE)
+    @RequirePermission(resource = AuthResourceId.Key.ROLES, value = Permission.WRITE)
     public Response delete(@PathParam("id") UUID id) {
         roleService.delete(id);
         return Response.noContent().build();

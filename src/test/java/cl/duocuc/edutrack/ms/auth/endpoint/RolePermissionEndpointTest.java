@@ -13,6 +13,10 @@ import static org.hamcrest.Matchers.*;
 @QuarkusTest
 class RolePermissionEndpointTest extends EndpointTestSupport {
 
+    private static String uniqueKey() {
+        return "test." + UUID.randomUUID();
+    }
+
     @Test
     void list_sinRol_retorna403() {
         given().when().get("/auth/roles/" + superuserRoleId() + "/permissions")
@@ -28,23 +32,23 @@ class RolePermissionEndpointTest extends EndpointTestSupport {
 
     @Test
     void upsert_create_retornaFlags() {
-        UUID resourceUuid = UUID.randomUUID();
+        String resourceKey = uniqueKey();
         given()
             .header("X-User-Roles", superuserHeader())
             .contentType(ContentType.JSON)
             .body(Map.of("flags", 7))
         .when()
-            .put("/auth/roles/" + superuserRoleId() + "/permissions/" + resourceUuid)
+            .put("/auth/roles/" + superuserRoleId() + "/permissions/" + resourceKey)
         .then().statusCode(200)
             .body("flags", equalTo(7))
             .body("flagsLabel", equalTo("rwx"))
-            .body("resourceUuid", equalTo(resourceUuid.toString()));
+            .body("resourceKey", equalTo(resourceKey));
     }
 
     @Test
     void upsert_update_actualizaFlags() {
-        UUID resourceUuid = UUID.randomUUID();
-        String url = "/auth/roles/" + superuserRoleId() + "/permissions/" + resourceUuid;
+        String resourceKey = uniqueKey();
+        String url = "/auth/roles/" + superuserRoleId() + "/permissions/" + resourceKey;
 
         given().header("X-User-Roles", superuserHeader())
             .contentType(ContentType.JSON).body(Map.of("flags", 4))
@@ -62,7 +66,7 @@ class RolePermissionEndpointTest extends EndpointTestSupport {
             .header("X-User-Roles", superuserHeader())
             .contentType(ContentType.JSON)
             .body(Map.of("flags", 99))
-        .when().put("/auth/roles/" + superuserRoleId() + "/permissions/" + UUID.randomUUID())
+        .when().put("/auth/roles/" + superuserRoleId() + "/permissions/" + uniqueKey())
         .then().statusCode(400);
     }
 
@@ -72,28 +76,28 @@ class RolePermissionEndpointTest extends EndpointTestSupport {
             .header("X-User-Roles", superuserHeader())
             .contentType(ContentType.JSON)
             .body(Map.of("flags", 5))
-        .when().put("/auth/roles/" + UUID.randomUUID() + "/permissions/" + UUID.randomUUID())
+        .when().put("/auth/roles/" + UUID.randomUUID() + "/permissions/" + uniqueKey())
         .then().statusCode(404);
     }
 
     @Test
     void list_incluyePermisosCreados() {
-        UUID resourceUuid = UUID.randomUUID();
+        String resourceKey = uniqueKey();
         given().header("X-User-Roles", superuserHeader())
             .contentType(ContentType.JSON).body(Map.of("flags", 7))
-        .when().put("/auth/roles/" + superuserRoleId() + "/permissions/" + resourceUuid)
+        .when().put("/auth/roles/" + superuserRoleId() + "/permissions/" + resourceKey)
         .then().statusCode(200);
 
         given().header("X-User-Roles", superuserHeader())
         .when().get("/auth/roles/" + superuserRoleId() + "/permissions")
         .then().statusCode(200)
-            .body("resourceUuid", hasItem(resourceUuid.toString()));
+            .body("resourceKey", hasItem(resourceKey));
     }
 
     @Test
     void delete_eliminaPermiso() {
-        UUID resourceUuid = UUID.randomUUID();
-        String url = "/auth/roles/" + superuserRoleId() + "/permissions/" + resourceUuid;
+        String resourceKey = uniqueKey();
+        String url = "/auth/roles/" + superuserRoleId() + "/permissions/" + resourceKey;
         given().header("X-User-Roles", superuserHeader())
             .contentType(ContentType.JSON).body(Map.of("flags", 7))
         .when().put(url).then().statusCode(200);
@@ -107,15 +111,15 @@ class RolePermissionEndpointTest extends EndpointTestSupport {
 
     @Test
     void effective_computaFlagsParaRecurso() {
-        UUID resourceUuid = UUID.randomUUID();
+        String resourceKey = uniqueKey();
         given().header("X-User-Roles", superuserHeader())
             .contentType(ContentType.JSON).body(Map.of("flags", 5))
-        .when().put("/auth/roles/" + superuserRoleId() + "/permissions/" + resourceUuid)
+        .when().put("/auth/roles/" + superuserRoleId() + "/permissions/" + resourceKey)
         .then().statusCode(200);
 
         given()
             .header("X-User-Roles", superuserHeader())
-            .queryParam("resourceUuid", resourceUuid.toString())
+            .queryParam("resourceKey", resourceKey)
         .when().get("/auth/roles/" + superuserRoleId() + "/permissions/effective")
         .then().statusCode(200)
             .body("flags", equalTo(5))
@@ -126,7 +130,7 @@ class RolePermissionEndpointTest extends EndpointTestSupport {
     void effective_permiteRolDocente() {
         given()
             .header("X-User-Roles", docenteHeader())
-            .queryParam("resourceUuid", UUID.randomUUID().toString())
+            .queryParam("resourceKey", uniqueKey())
         .when().get("/auth/roles/" + superuserRoleId() + "/permissions/effective")
         .then().statusCode(200)
             .body("flags", equalTo(0));

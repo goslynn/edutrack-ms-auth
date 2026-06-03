@@ -10,6 +10,7 @@ import cl.duocuc.edutrack.ms.infrastructure.security.RequirePermission;
 import com.fasterxml.jackson.annotation.JsonView;
 import jakarta.inject.Inject;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Size;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
@@ -27,7 +28,7 @@ public class RolePermissionResource {
 
     @GET
     @JsonView(Views.List.class)
-    @RequirePermission(resource = AuthResourceId.Uuid.PERMISSIONS, value = Permission.READ)
+    @RequirePermission(resource = AuthResourceId.Key.PERMISSIONS, value = Permission.READ)
     public List<PermissionResponse> list(
         @PathParam("roleId") UUID roleId
     ) {
@@ -37,25 +38,25 @@ public class RolePermissionResource {
     }
 
     @PUT
-    @Path("/{resourceUuid}")
+    @Path("/{resourceKey}")
     @JsonView(Views.Detailed.class)
-    @RequirePermission(resource = AuthResourceId.Uuid.PERMISSIONS, value = Permission.WRITE)
+    @RequirePermission(resource = AuthResourceId.Key.PERMISSIONS, value = Permission.WRITE)
     public PermissionResponse upsert(
         @PathParam("roleId") UUID roleId,
-        @PathParam("resourceUuid") UUID resourceUuid,
+        @PathParam("resourceKey") @Size(max = 150) String resourceKey,
         @Valid @JsonView(Views.Update.class) PermissionRequest req
     ) {
-        return permissionService.toResponse(permissionService.upsert(roleId, resourceUuid, req.flags()));
+        return permissionService.toResponse(permissionService.upsert(roleId, resourceKey, req.flags()));
     }
 
     @DELETE
-    @Path("/{resourceUuid}")
-    @RequirePermission(resource = AuthResourceId.Uuid.PERMISSIONS, value = Permission.WRITE)
+    @Path("/{resourceKey}")
+    @RequirePermission(resource = AuthResourceId.Key.PERMISSIONS, value = Permission.WRITE)
     public Response delete(
         @PathParam("roleId") UUID roleId,
-        @PathParam("resourceUuid") UUID resourceUuid
+        @PathParam("resourceKey") @Size(max = 150) String resourceKey
     ) {
-        permissionService.delete(roleId, resourceUuid);
+        permissionService.delete(roleId, resourceKey);
         return Response.noContent().build();
     }
 
@@ -66,12 +67,12 @@ public class RolePermissionResource {
     @GET
     @Path("/effective")
     @JsonView(Views.Detailed.class)
-    @RequirePermission(resource = AuthResourceId.Uuid.PERMISSIONS_EFFECTIVE, value = Permission.READ)
+    @RequirePermission(resource = AuthResourceId.Key.PERMISSIONS_EFFECTIVE, value = Permission.READ)
     public PermissionResponse effectiveFlags(
         @PathParam("roleId") UUID roleId,
-        @QueryParam("resourceUuid") UUID resourceUuid
+        @QueryParam("resourceKey") String resourceKey
     ) {
-        short flags = permissionService.computeEffectiveFlags(List.of(roleId), resourceUuid);
-        return PermissionResponse.of(roleId, resourceUuid, flags);
+        short flags = permissionService.computeEffectiveFlags(List.of(roleId), resourceKey);
+        return PermissionResponse.of(roleId, resourceKey, flags);
     }
 }
