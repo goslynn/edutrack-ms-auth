@@ -29,7 +29,7 @@ public class UserRoleResource {
 
     @GET
     @JsonView(Views.List.class)
-    @RequirePermission(resource = AuthResourceId.Key.USER_ROLES, value = Permission.READ, selfParam = "userId")
+    @RequirePermission(resource = AuthResourceId.USER_ROLES, value = Permission.READ, selfParam = "userId")
     public List<RoleResponse> list(
         @PathParam("userId") UUID userId
     ) {
@@ -40,7 +40,7 @@ public class UserRoleResource {
 
     @POST
     @Path("/{roleId}")
-    @RequirePermission(resource = AuthResourceId.Key.USER_ROLES, value = Permission.WRITE)
+    @RequirePermission(resource = AuthResourceId.USER_ROLES, value = Permission.WRITE)
     public Response assign(
         @PathParam("userId") UUID userId,
         @PathParam("roleId") UUID roleId
@@ -51,7 +51,7 @@ public class UserRoleResource {
 
     @DELETE
     @Path("/{roleId}")
-    @RequirePermission(resource = AuthResourceId.Key.USER_ROLES, value = Permission.WRITE)
+    @RequirePermission(resource = AuthResourceId.USER_ROLES, value = Permission.WRITE)
     public Response revoke(
         @PathParam("userId") UUID userId,
         @PathParam("roleId") UUID roleId

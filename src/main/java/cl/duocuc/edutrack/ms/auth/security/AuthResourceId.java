@@ -16,30 +16,16 @@ package cl.duocuc.edutrack.ms.auth.security;
  * recursos distintos a propósito: la consulta efectiva es legible por DOCENTE
  * mientras que la administración no.</p>
  *
- * <p>Las constantes anidadas en {@link Key} reproducen las mismas claves como
+ * <p>Las constantes anidadas en reproducen las mismas claves como
  * {@link String} de tiempo de compilación, para usarlas como valor de
  * anotaciones (p. ej. {@code @RequirePermission(resource = AuthResourceId.Key.USERS, ...)}).
  * El wildcard global vive en {@code infrastructure.security.ResourceIds}.</p>
  */
-public enum AuthResourceId {
-    USERS(Key.USERS),
-    ROLES(Key.ROLES),
-    PERMISSIONS(Key.PERMISSIONS),
-    PERMISSIONS_EFFECTIVE(Key.PERMISSIONS_EFFECTIVE),
-    USER_ROLES(Key.USER_ROLES);
+public interface AuthResourceId {
+    String USERS                 = "auth.users";
+    String ROLES                 = "auth.roles";
+    String PERMISSIONS           = "auth.permissions";
+    String PERMISSIONS_EFFECTIVE = "auth.permissions.effective";
+    String USER_ROLES            = "auth.user-roles";
 
-    public final String key;
-
-    AuthResourceId(String key) {
-        this.key = key;
-    }
-
-    /** Claves estables de recurso (aptas para anotaciones). */
-    public interface Key {
-        String USERS                = "auth.users";
-        String ROLES                = "auth.roles";
-        String PERMISSIONS          = "auth.permissions";
-        String PERMISSIONS_EFFECTIVE = "auth.permissions.effective";
-        String USER_ROLES           = "auth.user-roles";
-    }
 }

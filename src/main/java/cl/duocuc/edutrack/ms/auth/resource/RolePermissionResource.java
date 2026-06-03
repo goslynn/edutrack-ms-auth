@@ -28,7 +28,7 @@ public class RolePermissionResource {
 
     @GET
     @JsonView(Views.List.class)
-    @RequirePermission(resource = AuthResourceId.Key.PERMISSIONS, value = Permission.READ)
+    @RequirePermission(resource = AuthResourceId.PERMISSIONS, value = Permission.READ)
     public List<PermissionResponse> list(
         @PathParam("roleId") UUID roleId
     ) {
@@ -40,7 +40,7 @@ public class RolePermissionResource {
     @PUT
     @Path("/{resourceKey}")
     @JsonView(Views.Detailed.class)
-    @RequirePermission(resource = AuthResourceId.Key.PERMISSIONS, value = Permission.WRITE)
+    @RequirePermission(resource = AuthResourceId.PERMISSIONS, value = Permission.WRITE)
     public PermissionResponse upsert(
         @PathParam("roleId") UUID roleId,
         @PathParam("resourceKey") @Size(max = 150) String resourceKey,
@@ -51,7 +51,7 @@ public class RolePermissionResource {
 
     @DELETE
     @Path("/{resourceKey}")
-    @RequirePermission(resource = AuthResourceId.Key.PERMISSIONS, value = Permission.WRITE)
+    @RequirePermission(resource = AuthResourceId.PERMISSIONS, value = Permission.WRITE)
     public Response delete(
         @PathParam("roleId") UUID roleId,
         @PathParam("resourceKey") @Size(max = 150) String resourceKey
@@ -67,7 +67,7 @@ public class RolePermissionResource {
     @GET
     @Path("/effective")
     @JsonView(Views.Detailed.class)
-    @RequirePermission(resource = AuthResourceId.Key.PERMISSIONS_EFFECTIVE, value = Permission.READ)
+    @RequirePermission(resource = AuthResourceId.PERMISSIONS_EFFECTIVE, value = Permission.READ)
     public PermissionResponse effectiveFlags(
         @PathParam("roleId") UUID roleId,
         @QueryParam("resourceKey") String resourceKey
