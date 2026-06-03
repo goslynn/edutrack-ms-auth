@@ -1,14 +1,14 @@
 package cl.duocuc.edutrack.ms.auth.service.boostrap;
 
-import cl.duocuc.edutrack.ms.auth.model.entity.Role;
 import cl.duocuc.edutrack.ms.auth.model.entity.User;
-import cl.duocuc.edutrack.ms.auth.model.entity.UserRole;
 import cl.duocuc.edutrack.ms.auth.repository.UserRepository;
 import cl.duocuc.edutrack.ms.auth.service.PasswordService;
 import cl.duocuc.edutrack.ms.infrastructure.persistence.AuditContext;
-import com.oracle.svm.core.annotate.Inject;
+import jakarta.inject.Inject;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.transaction.Transactional;
+
+import java.util.UUID;
 
 @ApplicationScoped
 public class NoopUserSeeder {
@@ -21,20 +21,22 @@ public class NoopUserSeeder {
 
     @Transactional
     public void seedIfNeeded() {
-        boolean hayNoop = userRepository.findByIdOptional(AuditContext.NOOP_USER_ID)
+        final UUID noopId = AuditContext.props().noopUserId();
+
+        boolean hayNoop = userRepository.findByIdOptional(noopId)
                 .isPresent();
 
         if (hayNoop)
             return;
 
         User noop = new User();
-        noop.id = AuditContext.NOOP_USER_ID;
+        noop.id = noopId;
         noop.email = "noop@sample.email";
         noop.passwordHash = passwordService.hash("no-passw");
         noop.displayName = "noop";
         noop.enabled = false;
-        noop.creatorUser = AuditContext.NOOP_USER_ID;
-        noop.updaterUser = AuditContext.NOOP_USER_ID;
+        noop.creatorUser = noopId;
+        noop.updaterUser = noopId;
         noop.persist();
 
     }
