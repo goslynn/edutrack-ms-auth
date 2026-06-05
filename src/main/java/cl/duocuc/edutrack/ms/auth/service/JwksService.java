@@ -1,7 +1,9 @@
 package cl.duocuc.edutrack.ms.auth.service;
 
+import io.smallrye.jwt.util.ResourceUtils;
 import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.context.ApplicationScoped;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import java.io.InputStream;
 import java.math.BigInteger;
@@ -15,13 +17,23 @@ import java.util.Base64;
 @ApplicationScoped
 public class JwksService {
 
+    /**
+     * Misma ubicacion que consume el verificador MP-JWT: la llave ya no vive en
+     * el classpath sino en .certs/ (inyectado por env var). Se resuelve con el
+     * mismo {@link ResourceUtils} de SmallRye que usa el verificador y el
+     * firmador (classpath/file/URL), de modo que el JWKS publica exactamente la
+     * llave con la que se validan los tokens.
+     */
+    @ConfigProperty(name = "mp.jwt.verify.publickey.location")
+    String publicKeyLocation;
+
     private String jwksJson;
 
     @PostConstruct
     void init() {
-        try (InputStream is = Thread.currentThread().getContextClassLoader()
-                .getResourceAsStream("publicKey.pem")) {
-            if (is == null) throw new IllegalStateException("publicKey.pem not found on classpath");
+        try (InputStream is = ResourceUtils.getResourceStream(publicKeyLocation)) {
+            if (is == null) throw new IllegalStateException(
+                "Public key not found at " + publicKeyLocation);
 
             String pem = new String(is.readAllBytes(), StandardCharsets.UTF_8)
                 .replace("-----BEGIN PUBLIC KEY-----", "")
@@ -42,7 +54,8 @@ public class JwksService {
                 + "\"n\":\"" + n + "\","
                 + "\"e\":\"" + e + "\"}]}";
         } catch (Exception ex) {
-            throw new RuntimeException("Failed to load public key for JWKS endpoint", ex);
+            throw new RuntimeException(
+                "Failed to load public key for JWKS endpoint from " + publicKeyLocation, ex);
         }
     }
 

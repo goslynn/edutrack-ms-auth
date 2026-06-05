@@ -1,0 +1,102 @@
+version: "3.9"
+
+# Auth Service — despliegue local (desarrollo)
+#
+# Prerequisitos:
+#   1. PostgreSQL corriendo FÍSICAMENTE en la máquina host (no en Docker).
+#   2. La red `edutrack` ya creada por el compose del gateway:
+#        cd ../infra && docker compose up -d gateway
+#      (ese compose declara `networks.edutrack` con `name: edutrack`).
+#   3. El artefacto empaquetado: `./mvnw package` (deja target/quarkus-app/).
+#      `edutrack-ms-commons` debe estar instalado en ~/.m2 (mvn install en commons).
+#
+# Arranque:
+#   ./mvnw package && docker compose up --build
+#
+# El contenedor se llama `auth` a propósito: es el contrato de descubrimiento.
+#   - El gateway lo resuelve con UPSTREAM_HOST_PATTERN="{service}:8080" → auth:8080
+#   - Los REST Client de la plataforma lo resuelven con el patrón de discovery
+#     EDUTRACK_DISCOVERY_PATTERN="{service}:8080" → auth:8080 (ver más abajo).
+
+services:
+
+  auth:
+    container_name: auth          # DEBE ser "auth": nombre lógico del gateway + discovery
+    hostname: auth
+    image: edutrack/auth:local
+    build:
+      context: .
+      dockerfile: src/main/docker/Dockerfile.jvm   # imagen JVM en capas de Quarkus (rebuilds rápidos)
+
+    # (1) Extensión de variables de entorno: se carga el .env del servicio como
+    #     base y `environment` lo PISA selectivamente para el contexto Docker.
+    #     Los `${VAR:-default}` permiten override desde la shell del host.
+    env_file:
+      - .env
+    environment:
+      # (2) Base de datos en el HOST (no en un contenedor). En Linux, el host es
+      #     alcanzable como `host.docker.internal` gracias al `extra_hosts` de abajo.
+      #     Esto pisa el DB_HOST=127.0.0.1 del .env (que solo sirve para correr el
+      #     jar nativamente, sin Docker).
+      DB_HOST: host.docker.internal
+
+      # Perfil intercambiable vía env var; por defecto `dev` (validate + log SQL).
+      #   QUARKUS_PROFILE=prod docker compose up  → generation=none, sin logs SQL.
+      QUARKUS_PROFILE: ${QUARKUS_PROFILE:-dev}
+
+      # (5) Clientes HTTP agnósticos del entorno: en prod la librería resuelve
+      #     `edutrack-{service}.fly.internal:8080` (default de commons); aquí se
+      #     pisa el patrón para que toda llamada inter-servicio (incl. la auto-
+      #     llamada de RemotePermissionEvaluator → AuthClient) resuelva por nombre
+      #     de contenedor en la red `edutrack`. El código no cambia entre entornos.
+      EDUTRACK_DISCOVERY_PATTERN: "{service}:8080"
+      EDUTRACK_DISCOVERY_SCHEME: http
+
+      # Llaves RS256 inyectadas por ubicación (no van en la imagen ni en el
+      #   classpath): apuntan al volumen .certs/ montado abajo. En Fly.io se
+      #   reemplaza por un secret/volumen sin tocar el código.
+      #   Esquema file: obligatorio: SmallRye resuelve la location como URL y un
+      #   path absoluto sin esquema falla con "MalformedURLException: no protocol".
+      JWT_PRIVATE_KEY_LOCATION: file:/certs/privateKey.pem
+      JWT_PUBLIC_KEY_LOCATION: file:/certs/publicKey.pem
+
+    # Acceso al PostgreSQL del host desde dentro del contenedor (Linux).
+    #   NO usar "host-gateway": ese alias siempre resuelve al gateway del bridge
+    #   por defecto (172.17.0.1), no al de la red `edutrack`, y Postgres no
+    #   escucha ahí. Apuntamos directo al gateway de `edutrack` (172.18.0.1, IP
+    #   del host en esta red), que es donde el Postgres del host sí escucha.
+    extra_hosts:
+      - "host.docker.internal:172.18.0.1"
+
+    # Directorio de secretos RS256 (gitignored) montado read-only. Es la fuente
+    #   de verdad local de las llaves; el contenedor las lee desde aquí.
+    volumes:
+      - ./.certs:/certs:ro
+
+    # (3) y (4): misma red externa que el gateway. El gateway enruta /auth/* →
+    #     auth:8080 por esta red; no se necesita publicar el puerto al host para
+    #     que el gateway funcione.
+    networks:
+      - edutrack
+
+    # Puerto directo SOLO para depuración local (el gateway ya ocupa el 8080 del
+    #   host). Golpea http://localhost:8081/auth/... sin pasar por el gateway.
+    ports:
+      - "8081:8080"
+
+    restart: on-failure
+
+    healthcheck:
+      # Endpoint siempre disponible y barato; no requiere identidad ni DB.
+      test: ["CMD", "curl", "-fsS", "http://localhost:8080/q/health/ready"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+# La red la crea y posee el compose del gateway (../infra/docker-compose.yml).
+# Aquí se referencia como externa para no recrearla.
+networks:
+  edutrack:
+    external: true
+    name: edutrack
