@@ -1,15 +1,23 @@
+auth {
+  mode: bearer
+}
+
+auth:bearer {
+  token: eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJpc3MiOiJlZHV0cmFjay1hdXRoIiwic3ViIjoiYmExYmQ2MDktYmFmOS00NDAyLWI5OTYtMjE3N2YyOWI2YWJlIiwicm9sZXMiOlsiZDQzZGVhOTgtYTc3MC00NTkzLWFiY2YtYmRmZWMzYTNkNDFjIl0sImV4cCI6MTc4MDYyODYwNSwiaWF0IjoxNzgwNjI3NzA1LCJqdGkiOiJmNzdlMjU2OS1lOTliLTQwODQtYTIxZS01NWVhN2FiZjAxM2UifQ.cdLXuYNkWySDVcfkSl1QXB7lw9M163poKf1im38uh7N9f8vfJy2E5A9rh1D8EHQQecIJhP-skf1pEu-bMs41FLWP4ZeTnA7TvxdE0PjS6IayD2JG0K0iFfHrNh3Ka4Rl0axetC1eBMe9CTnSHfoTdNxEhXIpzSjfYDz_rbvS9UXa4DLes87KuTEzzwrK1BZzDi5KIcFASUwGAvY34vyMz-Cy5Y1cfSEF0dX-5u7R3P8155410-HSpE7bQr88nQdW1H6H48O1w3MQZyKBXIFav07x-CK1MNVntmR8iNc82y_7mAwW6cLNQ4K_-5Mazk5WDcl4WtXo_-qyUAfqQKdDWQ
+}
+
 vars:pre-request {
-  baseUrl: {{protocol}}://{{domain}}:{{port}}
-  userRoles:
-  userId:
-  resourceUuid:
+  baseUrl: {{protocol}}://{{domain}}:{{port}}/{{serviceId}}
+  userRoles: 
+  userId: 
+  serviceId: auth
 }
 
 docs {
   # EduTrack Auth — colección
-
+  
   ## Variables
-
+  
   - **Entorno** (`environments/*.bru`): solo `protocol`, `domain`, `port`.
     Selecciona Local o Production.
   - **Colección** (este archivo): `baseUrl` se compone de las 3 variables de

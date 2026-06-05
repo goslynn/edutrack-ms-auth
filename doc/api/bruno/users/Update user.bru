@@ -5,9 +5,9 @@ meta {
 }
 
 put {
-  url: {{baseUrl}}/auth/users/:userId
+  url: {{baseUrl}}/users/:userId
   body: json
-  auth: none
+  auth: inherit
 }
 
 params:path {

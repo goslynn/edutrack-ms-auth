@@ -5,13 +5,9 @@ meta {
 }
 
 post {
-  url: {{baseUrl}}/auth/logout
+  url: {{baseUrl}}/logout
   body: none
-  auth: none
-}
-
-headers {
-  X-User-Id: {{userId}}
+  auth: inherit
 }
 
 docs {

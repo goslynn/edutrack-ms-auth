@@ -5,13 +5,9 @@ meta {
 }
 
 get {
-  url: {{baseUrl}}/auth/users
+  url: {{baseUrl}}/users
   body: none
-  auth: none
-}
-
-headers {
-  X-User-Roles: {{userRoles}}
+  auth: inherit
 }
 
 docs {

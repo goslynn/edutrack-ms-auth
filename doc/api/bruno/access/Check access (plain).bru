@@ -5,13 +5,13 @@ meta {
 }
 
 get {
-  url: {{baseUrl}}/auth/access?resourceUuid={{resourceUuid}}&permission=READ
+  url: {{baseUrl}}/access?resourceUuid&permission=READ
   body: none
   auth: none
 }
 
 params:query {
-  resourceUuid: {{resourceUuid}}
+  resourceUuid: 
   permission: READ
 }
 
@@ -24,7 +24,7 @@ docs {
   Verifica si el usuario propagado por el Gateway tiene el permiso indicado
   sobre el `resourceUuid`. Respuesta extra ligera en `text/plain`: cuerpo
   `"1"` (allowed) o `"0"` (denied).
-
+  
   Endpoint público tras el Gateway: sin `X-User-Roles` simplemente no hay
   grants que sumar ⇒ devuelve `"0"`, no `403`. `resourceUuid` ausente ⇒
   `400` (Bean Validation); `permission` por defecto es `READ`.

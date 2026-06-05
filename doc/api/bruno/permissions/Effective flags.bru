@@ -5,9 +5,9 @@ meta {
 }
 
 get {
-  url: {{baseUrl}}/auth/roles/{{roleId}}/permissions/effective?resourceUuid={{resourceUuid}}
+  url: {{baseUrl}}/roles/{{roleId}}/permissions/effective?resourceUuid={{resourceUuid}}
   body: none
-  auth: none
+  auth: inherit
 }
 
 params:query {

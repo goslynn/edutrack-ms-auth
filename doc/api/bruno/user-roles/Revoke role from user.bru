@@ -5,9 +5,9 @@ meta {
 }
 
 delete {
-  url: {{baseUrl}}/auth/users/{{userId}}/roles/:roleId
+  url: {{baseUrl}}/users/{{userId}}/roles/:roleId
   body: none
-  auth: none
+  auth: inherit
 }
 
 params:path {

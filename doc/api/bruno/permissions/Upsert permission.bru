@@ -5,9 +5,9 @@ meta {
 }
 
 put {
-  url: {{baseUrl}}/auth/roles/{{roleId}}/permissions/:resourceUuid
+  url: {{baseUrl}}/roles/{{roleId}}/permissions/:resourceUuid
   body: json
-  auth: none
+  auth: inherit
 }
 
 params:path {
