@@ -2,12 +2,14 @@ package cl.duocuc.edutrack.ms.auth.model.dto;
 
 import cl.duocuc.edutrack.ms.infrastructure.jackson.Views;
 import com.fasterxml.jackson.annotation.JsonView;
+import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
+@Schema(description = "Par de tokens emitido tras login o refresh.")
 public record AuthResponse(
-    @JsonView(Views.Base.class) String accessToken,
-    @JsonView(Views.Base.class) String refreshToken,
-    @JsonView(Views.Base.class) String tokenType,
-    @JsonView(Views.Base.class) long expiresIn
+    @Schema(description = "JWT RS256 de acceso; va en el header Authorization: Bearer") String accessToken,
+    @Schema(description = "Token opaco para renovar el access token via POST /auth/refresh") String refreshToken,
+    @Schema(description = "Tipo de token", examples = "Bearer") String tokenType,
+    @Schema(description = "Vigencia del access token en segundos", examples = "900") long expiresIn
 ) {
 
     /**

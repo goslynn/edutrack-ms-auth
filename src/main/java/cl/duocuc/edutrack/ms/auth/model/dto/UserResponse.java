@@ -3,19 +3,22 @@ package cl.duocuc.edutrack.ms.auth.model.dto;
 import cl.duocuc.edutrack.ms.auth.model.entity.User;
 import cl.duocuc.edutrack.ms.infrastructure.jackson.Views;
 import com.fasterxml.jackson.annotation.JsonView;
+import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
+@Schema(description = "Representacion de un usuario. roleIds y timestamps solo viajan en vistas Detailed/Admin.")
 public record UserResponse(
-    @JsonView(Views.Base.class) UUID id,
-    @JsonView(Views.Base.class) String email,
-    @JsonView(Views.Base.class) String displayName,
-    @JsonView({Views.Base.class, Views.Admin.class}) boolean enabled,
+    @Schema(description = "UUID del usuario") UUID id,
+    @Schema(description = "Email", examples = "docente@edutrack.cl") String email,
+    @Schema(description = "Nombre visible", examples = "Juan Perez") String displayName,
+    @JsonView({Views.Base.class, Views.Admin.class}) @Schema(description = "Usuario habilitado") boolean enabled,
     @JsonView({Views.Detailed.class, Views.Admin.class}) Instant createdAt,
     @JsonView({Views.Detailed.class, Views.Admin.class}) Instant updatedAt,
-    @JsonView({Views.Detailed.class, Views.Admin.class, Views.Extra.class}) List<UUID> roleIds
+    @JsonView({Views.Detailed.class, Views.Admin.class, Views.Extra.class})
+    @Schema(description = "UUIDs de los roles asignados") List<UUID> roleIds
 ) {
 
     /**

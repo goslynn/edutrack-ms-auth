@@ -3,6 +3,7 @@ package cl.duocuc.edutrack.ms.auth.model.dto;
 import cl.duocuc.edutrack.ms.infrastructure.security.Permission;
 import cl.duocuc.edutrack.ms.infrastructure.jackson.Views;
 import com.fasterxml.jackson.annotation.JsonView;
+import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
 /**
  * Resultado de la verificación de acceso del usuario propagado por el Gateway
@@ -16,12 +17,13 @@ import com.fasterxml.jackson.annotation.JsonView;
  * @param effectiveFlags flags efectivos del usuario sobre el recurso (incluye comodín ALL)
  * @param effectiveLabel representación {@code rwx} de {@code effectiveFlags}
  */
+@Schema(description = "Resultado de la verificacion de acceso del usuario propagado sobre un recurso.")
 public record AccessResponse(
-    @JsonView(Views.Base.class) boolean allowed,
-    @JsonView(Views.Base.class) String resourceKey,
-    @JsonView(Views.Base.class) String required,
-    @JsonView(Views.Base.class) short effectiveFlags,
-    @JsonView(Views.Base.class) String effectiveLabel
+    @Schema(description = "Si los roles satisfacen el permiso pedido") boolean allowed,
+    @Schema(description = "Recurso consultado", examples = "auth.users") String resourceKey,
+    @Schema(description = "Permiso solicitado", examples = "READ") String required,
+    @Schema(description = "Flags efectivos del usuario (incluye comodin ALL)", examples = "6") short effectiveFlags,
+    @Schema(description = "Etiqueta rwx de los flags efectivos", examples = "rw-") String effectiveLabel
 ) {
 
     /**

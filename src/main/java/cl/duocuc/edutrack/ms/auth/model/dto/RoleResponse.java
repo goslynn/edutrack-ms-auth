@@ -3,14 +3,16 @@ package cl.duocuc.edutrack.ms.auth.model.dto;
 import cl.duocuc.edutrack.ms.auth.model.entity.Role;
 import cl.duocuc.edutrack.ms.infrastructure.jackson.Views;
 import com.fasterxml.jackson.annotation.JsonView;
+import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
 import java.time.Instant;
 import java.util.UUID;
 
+@Schema(description = "Representacion de un rol.")
 public record RoleResponse(
-    @JsonView(Views.Base.class) UUID id,
-    @JsonView(Views.Base.class) String name,
-    @JsonView({Views.Base.class, Views.Extra.class}) String description,
+    @Schema(description = "UUID del rol") UUID id,
+    @Schema(description = "Nombre del rol", examples = "DOCENTE") String name,
+    @JsonView({Views.Base.class, Views.Extra.class}) @Schema(description = "Descripcion") String description,
     @JsonView({Views.Detailed.class, Views.Admin.class}) Instant createdAt,
     @JsonView({Views.Detailed.class, Views.Admin.class}) Instant updatedAt
 ) {
