@@ -21,6 +21,10 @@ package cl.duocuc.edutrack.ms.auth.security;
  * anotaciones (p. ej. {@code @RequirePermission(resource = AuthResourceId.Key.USERS, ...)}).
  * El wildcard global vive en {@code infrastructure.security.ResourceIds}.</p>
  */
+// TODO(resource-catalog): exponer este catálogo vía GET /auth/meta/resources para que el
+//  frontend descubra las resource keys asignables (no hay tabla `resources`; la fuente de
+//  verdad es este enum). Es la implementación concreta para Auth de la decisión descentralizada
+//  documentada en infrastructure.security.ResourceIds. Replicar el patrón en cada MS nuevo.
 public interface AuthResourceId {
     String USERS                 = "auth.users";
     String ROLES                 = "auth.roles";

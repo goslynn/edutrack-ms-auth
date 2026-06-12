@@ -23,7 +23,7 @@ public class PermissionService implements PermissionEvaluator {
 
     @Transactional
     public RolePermission upsert(UUID roleId, String resourceKey, short flags) {
-        Role role = (Role) Role.findByIdOptional(roleId)
+        Role role = Role.<Role>findByIdOptional(roleId)
             .orElseThrow(() -> new WebApplicationException(Response.Status.NOT_FOUND));
 
         return permissionRepository.findByRoleAndResource(roleId, resourceKey)
