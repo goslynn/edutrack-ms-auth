@@ -10,7 +10,7 @@ import jakarta.transaction.Transactional;
 import java.util.UUID;
 
 @ApplicationScoped
-public class NoopUserSeeder {
+public class NoopUserSeeder implements Seeder {
 
     @Inject
     UserRepository userRepository;
@@ -18,8 +18,9 @@ public class NoopUserSeeder {
     @Inject
     PasswordService passwordService;
 
+    @Override
     @Transactional
-    public void seedIfNeeded() {
+    public void seed() {
         final UUID noopId = AuditContext.props().noopUserId();
 
         boolean hayNoop = userRepository.findByIdOptional(noopId)

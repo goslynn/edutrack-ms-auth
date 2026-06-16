@@ -9,10 +9,9 @@ import cl.duocuc.edutrack.ms.auth.service.PasswordService;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
-import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 @ApplicationScoped
-public class AdminSeeder {
+public class AdminSeeder implements Seeder {
 
     @Inject
     UserRepository userRepository;
@@ -23,22 +22,17 @@ public class AdminSeeder {
     @Inject
     PasswordService passwordService;
 
-    @ConfigProperty(name = "auth.seed.admin.email", defaultValue = "admin@edutrack.cl")
-    String adminEmail;
+    @Inject
+    AdminSeedConfig config;
 
-    @ConfigProperty(name = "auth.seed.admin.password", defaultValue = "changeme123!")
-    String adminPassword;
-
-    @ConfigProperty(name = "auth.seed.admin.display-name", defaultValue = "admin")
-    String adminDisplayName;
-
+    @Override
     @Transactional
-    public void seedIfNeeded() {
+    public void seed() {
         Role superuserRole = roleRepository.findByName("SUPERUSER")
             .orElseThrow(() -> new IllegalStateException(
                 "SUPERUSER role not found — verify Flyway V2 migration ran correctly"));
 
-        boolean hayAdmin = userRepository.findByEmail(adminEmail)
+        boolean hayAdmin = userRepository.findByEmail(config.email())
                 .filter(u -> u.userRoles.stream().anyMatch(ur -> superuserRole.equals(ur.role)))
                 .isPresent();
 
@@ -46,9 +40,9 @@ public class AdminSeeder {
             return;
 
         User admin = new User();
-        admin.email = adminEmail;
-        admin.passwordHash = passwordService.hash(adminPassword);
-        admin.displayName = adminDisplayName;
+        admin.email = config.email();
+        admin.passwordHash = passwordService.hash(config.password());
+        admin.displayName = config.displayName();
         admin.enabled = true;
         admin.persist();
 
